@@ -54,11 +54,11 @@ object MoveCoach {
         (103.1668 * exp(-0.04354 * winLossPct) - 3.1669).coerceIn(0.0, 100.0)
 
     fun uciOf(m: Move): String {
-        val promo = if (m.promotion != Piece.NONE) m.promotion.pieceType.sanSymbol.lowercase() else ""
+        val promo = if (m.promotion != Piece.NONE) (m.promotion.pieceType?.sanSymbol ?: "").lowercase() else ""
         return m.from.value().lowercase() + m.to.value().lowercase() + promo
     }
 
-    private fun keyOf(type: PieceType): String = when (type) {
+    private fun keyOf(type: PieceType?): String = when (type) {
         PieceType.PAWN -> "P"
         PieceType.KNIGHT -> "N"
         PieceType.BISHOP -> "B"
@@ -80,7 +80,7 @@ object MoveCoach {
     /** Notation algébrique standard (SAN) d'un coup légal sur [board]. */
     fun sanOf(board: Board, move: Move): String {
         val piece = board.getPiece(move.from)
-        val type = piece.pieceType
+        val type = piece.pieceType ?: PieceType.NONE
         val target = board.getPiece(move.to)
         val isCapture = target != Piece.NONE || (type == PieceType.PAWN && move.from.file != move.to.file)
         val sb = StringBuilder()
@@ -109,7 +109,7 @@ object MoveCoach {
             }
             if (isCapture) sb.append('x')
             sb.append(move.to.value().lowercase())
-            if (move.promotion != Piece.NONE) sb.append('=').append(move.promotion.pieceType.sanSymbol)
+            if (move.promotion != Piece.NONE) sb.append('=').append(move.promotion.pieceType?.sanSymbol ?: "")
         }
         board.doMove(move, false)
         if (board.isMated) sb.append('#') else if (board.isKingAttacked) sb.append('+')
@@ -181,7 +181,7 @@ object MoveCoach {
         var mateIn = 0
 
         if (grade >= Grade.INACCURACY) {
-            val movedType = movedPiece.pieceType
+            val movedType = movedPiece.pieceType ?: PieceType.NONE
             val toSq = played.to.value().lowercase()
             when {
                 playedScore <= -MATE_THRESHOLD -> {
