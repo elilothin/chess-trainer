@@ -78,12 +78,12 @@ jobs:
         fi
 
     - name: Tests unitaires (moteur, bots, coach, Elo)
-      run: gradle testDebugUnitTest --tests 'com.example.BotEngineTest' -i --stacktrace 2>&1 | tee test.log | grep -E "MATCH|note|BotEngineTest|FAILED|PASSED|error:|e: " || true
-      continue-on-error: true
+      run: |
+        gradle testDebugUnitTest --tests 'com.example.BotEngineTest' -i --stacktrace > test.log 2>&1 || true
+        grep -E "MATCH|note|BotEngineTest >|BUILD|e: file" test.log | head -60
 
     - name: Verdict
       run: |
-        grep -E "BotEngineTest >|BUILD|e: file" test.log | head -60
         grep -q "BUILD SUCCESSFUL" test.log
 
     - name: Rapports
