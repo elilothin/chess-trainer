@@ -12,6 +12,9 @@ import com.example.data.local.PuzzleProgressEntity
 import com.example.data.local.RepertoireLineEntity
 import com.example.data.local.SettingsDataStore
 import com.example.data.local.TrainingDao
+import com.example.domain.bot.BotPersona
+import com.example.domain.bot.PlayProfile
+import com.example.domain.bot.RatingChange
 import com.example.domain.model.AppLanguage
 import com.example.domain.model.AppThemeMode
 import com.example.domain.model.EndgameModuleItem
@@ -31,6 +34,12 @@ class ChessTrainingRepository(
     private val settingsStore: SettingsDataStore
 ) {
     val settings: Flow<UserSettings> = settingsStore.settingsFlow
+    val playProfile: Flow<PlayProfile> = settingsStore.playProfileFlow
+
+    suspend fun applyGameResult(persona: BotPersona, botEloAtStart: Int, playerScore: Double, rated: Boolean): RatingChange =
+        settingsStore.applyGameResult(persona, botEloAtStart, playerScore, rated)
+
+    suspend fun setStartingElo(elo: Int) = settingsStore.setStartingElo(elo)
     val lessonProgress: Flow<List<LessonProgressEntity>> = dao.observeLessonProgress()
     val puzzleProgress: Flow<List<PuzzleProgressEntity>> = dao.observePuzzleProgress()
     val repertoireLines: Flow<List<RepertoireLineEntity>> = dao.observeRepertoireLines()

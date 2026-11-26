@@ -13,6 +13,10 @@ import com.example.data.local.RepertoireLineEntity
 import com.example.data.repository.ChessTrainingRepository
 import com.example.domain.chess.ChessAi
 import com.example.domain.chess.PgnParser
+import com.example.domain.bot.BotPersona
+import com.example.domain.bot.MoveNote
+import com.example.domain.bot.PlayProfile
+import com.example.domain.bot.RatingChange
 import com.example.domain.model.AppLanguage
 import com.example.domain.model.AppThemeMode
 import com.example.domain.model.DailyQuestProgress
@@ -55,6 +59,23 @@ class ChessTrainerViewModel(
 
     val settings: StateFlow<UserSettings> = repository.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserSettings())
+
+    val playProfile: StateFlow<PlayProfile> = repository.playProfile
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PlayProfile())
+
+    private val _review = MutableStateFlow<GameReviewData?>(null)
+    val review: StateFlow<GameReviewData?> = _review.asStateFlow()
+
+    fun openReview(data: GameReviewData) {
+        _review.value = data
+    }
+
+    suspend fun completeGame(persona: BotPersona, botEloAtStart: Int, playerScore: Double, rated: Boolean): RatingChange =
+        repository.applyGameResult(persona, botEloAtStart, playerScore, rated)
+
+    fun setStartingElo(elo: Int) {
+        viewModelScope.launch { repository.setStartingElo(elo) }
+    }
 
     val completedLessonIds: StateFlow<Set<String>> = repository.lessonProgress
         .map { list -> list.filter { it.completed }.map { it.lessonId }.toSet() }
@@ -440,3 +461,19 @@ class ChessTrainerViewModel(
         )
     }
 }
+
+/** Données d'un bilan de partie, transmises de l'écran de jeu à l'écran de bilan. */
+data class GameReviewData(
+    val botId: String,
+    val botNameFr: String,
+    val botNameEn: String,
+    val botElo: Int,
+    val userIsWhite: Boolean,
+    val result: String,
+    /** Tous les coups de la partie en UCI, dans l'ordre. */
+    val movesUci: List<String>,
+    /** Analyses déjà calculées pendant la partie (clé : demi-coup). */
+    val notes: Map<Int, MoveNote>,
+    val ratingChange: RatingChange?,
+    val rated: Boolean
+)

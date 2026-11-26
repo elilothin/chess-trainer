@@ -8,6 +8,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.domain.bot.BotPersona
+import com.example.domain.bot.PlayProfile
+import com.example.domain.bot.RatingChange
+import com.example.domain.bot.RatingEngine
 import com.example.domain.model.AppLanguage
 import com.example.domain.model.AppThemeMode
 import com.example.domain.model.UserSettings
@@ -24,6 +28,7 @@ class SettingsDataStore(private val context: Context) {
         val TEXT_SCALE = floatPreferencesKey("text_scale")
         val SHOW_COORDINATES = booleanPreferencesKey("show_coordinates")
         val HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
+        val PLAY_PROFILE = stringPreferencesKey("play_profile")
     }
 
     val settingsFlow: Flow<UserSettings> = context.dataStore.data.map { prefs ->
@@ -56,5 +61,33 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun setHapticsEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.HAPTICS_ENABLED] = enabled }
+    }
+
+    val playProfileFlow: Flow<PlayProfile> = context.dataStore.data.map { prefs ->
+        PlayProfile.decode(prefs[Keys.PLAY_PROFILE])
+    }
+
+    /** Applique le résultat d'une partie dans une seule transaction et renvoie la variation d'Elo. */
+    suspend fun applyGameResult(
+        persona: BotPersona,
+        botEloAtStart: Int,
+        playerScore: Double,
+        rated: Boolean
+    ): RatingChange {
+        var change: RatingChange? = null
+        context.dataStore.edit { prefs ->
+            val current = PlayProfile.decode(prefs[Keys.PLAY_PROFILE])
+            val (updated, c) = RatingEngine.apply(current, persona, botEloAtStart, playerScore, rated)
+            prefs[Keys.PLAY_PROFILE] = updated.encode()
+            change = c
+        }
+        return change ?: RatingChange(0, 0, botEloAtStart, botEloAtStart, false)
+    }
+
+    suspend fun setStartingElo(elo: Int) {
+        context.dataStore.edit { prefs ->
+            val current = PlayProfile.decode(prefs[Keys.PLAY_PROFILE])
+            prefs[Keys.PLAY_PROFILE] = current.copy(playerElo = elo, peakElo = maxOf(current.peakElo, elo)).encode()
+        }
     }
 }
