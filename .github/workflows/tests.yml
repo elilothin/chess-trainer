@@ -80,7 +80,7 @@ jobs:
     - name: Tests unitaires (moteur, bots, coach, Elo)
       run: |
         gradle testDebugUnitTest --tests 'com.example.BotEngineTest' -i --stacktrace > test.log 2>&1 || true
-        grep -E "MATCH|note|BotEngineTest >|BUILD|e: file" test.log | head -60
+        grep -E "MATCH|note:|note2:" test.log | head; grep -A14 "FAILED" test.log | head -90
 
     - name: Verdict
       run: |
