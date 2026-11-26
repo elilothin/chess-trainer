@@ -17,7 +17,7 @@ jobs:
       uses: actions/setup-java@v5
       with:
         distribution: 'temurin'
-        java-version: '17'
+        java-version: '21'
 
     # gradlew n'est pas dans le dépôt : on installe Gradle directement
     # (même version que gradle/wrapper/gradle-wrapper.properties)
