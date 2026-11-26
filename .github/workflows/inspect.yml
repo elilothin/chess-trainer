@@ -1,0 +1,14 @@
+name: Inspect lib
+on: workflow_dispatch
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '17' }
+      - run: |
+          curl -sSL -o k.jar https://repo1.maven.org/maven2/io/github/cvb941/kchesslib/1.0.5/kchesslib-1.0.5.jar
+          unzip -l k.jar | awk '{print $4}' | grep -E '^com/github/bhlangonijr/chesslib/[A-Za-z]+\.class' | head -50
+          for c in Board Square Piece Bitboard; do echo "=== $c"; javap -cp k.jar -public com.github.bhlangonijr.chesslib.$c | head -150; done
+          echo "=== Move"; javap -cp k.jar -public com.github.bhlangonijr.chesslib.move.Move
+          echo "=== MoveGenerator"; javap -cp k.jar -public com.github.bhlangonijr.chesslib.move.MoveGenerator
