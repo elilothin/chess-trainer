@@ -1,0 +1,6 @@
+{
+  "name": "Échecs Coach",
+  "description": "Application Android hors ligne, gratuite et open source d'entraînement complet aux échecs avec design glassmorphism : leçons, puzzles, ouvertures, milieu de jeu, finales, analyse PGN, parties historiques, coordonnées, quiz, jeu contre l'IA et suivi de progression.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

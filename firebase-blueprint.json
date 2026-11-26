@@ -1,0 +1,227 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Chess X player profile, campaign conquest progression across the 5 universes, island level, and online Elo rating.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID of the player."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Public display name shown in online lobbies."
+        },
+        "campaignElo": {
+          "type": "integer",
+          "description": "Campaign Elo starting at 500, +100 per campaign victory up to 3000."
+        },
+        "onlineElo": {
+          "type": "integer",
+          "description": "Online Chess.com-style Elo rating starting at 800."
+        },
+        "selectedUniverse": {
+          "type": "string",
+          "enum": ["CLASSIQUE", "WESTERN", "GRECE", "JAPON", "BASKET", "FUTURISTE"]
+        },
+        "selectedBoard": {
+          "type": "string",
+          "enum": ["CLASSIQUE", "WESTERN", "GRECE", "JAPON", "BASKET", "FUTURISTE"]
+        },
+        "unlockedUniverses": {
+          "type": "array",
+          "description": "List of unlocked universe IDs."
+        },
+        "westernWins": { "type": "integer" },
+        "greceWins": { "type": "integer" },
+        "japonWins": { "type": "integer" },
+        "basketWins": { "type": "integer" },
+        "futuristeWins": { "type": "integer" },
+        "islandLevel": { "type": "integer" },
+        "animationsEnabled": { "type": "boolean" },
+        "onlineWins": { "type": "integer" },
+        "onlineLosses": { "type": "integer" },
+        "onlineDraws": { "type": "integer" },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Must be written via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Must be written via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "displayName",
+        "campaignElo",
+        "onlineElo",
+        "selectedUniverse",
+        "selectedBoard",
+        "unlockedUniverses",
+        "westernWins",
+        "greceWins",
+        "japonWins",
+        "basketWins",
+        "futuristeWins",
+        "islandLevel",
+        "animationsEnabled",
+        "onlineWins",
+        "onlineLosses",
+        "onlineDraws",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "OnlineMatch": {
+      "title": "OnlineMatch",
+      "description": "Real-time online multiplayer match with 1/5/10 minute blitz clocks, mixed themes, and synchronized combat animations.",
+      "type": "object",
+      "properties": {
+        "whitePlayerId": { "type": "string" },
+        "whiteDisplayName": { "type": "string" },
+        "whiteUniverse": {
+          "type": "string",
+          "enum": ["CLASSIQUE", "WESTERN", "GRECE", "JAPON", "BASKET", "FUTURISTE"]
+        },
+        "whiteElo": { "type": "integer" },
+        "blackPlayerId": { "type": "string" },
+        "blackDisplayName": { "type": "string" },
+        "blackUniverse": {
+          "type": "string",
+          "enum": ["CLASSIQUE", "WESTERN", "GRECE", "JAPON", "BASKET", "FUTURISTE"]
+        },
+        "blackElo": { "type": "integer" },
+        "boardUniverse": {
+          "type": "string",
+          "enum": ["CLASSIQUE", "WESTERN", "GRECE", "JAPON", "BASKET", "FUTURISTE"]
+        },
+        "timeControlMinutes": {
+          "type": "integer",
+          "enum": [1, 5, 10]
+        },
+        "whiteTimeMs": { "type": "integer" },
+        "blackTimeMs": { "type": "integer" },
+        "status": {
+          "type": "string",
+          "enum": ["waiting", "active", "checkmate", "resigned", "timeout", "draw", "cancelled"]
+        },
+        "fen": { "type": "string" },
+        "turn": {
+          "type": "string",
+          "enum": ["w", "b"]
+        },
+        "lastMoveUci": { "type": "string" },
+        "lastCapturePiece": { "type": "string" },
+        "lastCaptureVictim": { "type": "string" },
+        "lastCaptureUniverse": {
+          "type": "string",
+          "enum": ["CLASSIQUE", "WESTERN", "GRECE", "JAPON", "BASKET", "FUTURISTE"]
+        },
+        "isCheck": { "type": "boolean" },
+        "winnerId": { "type": "string" },
+        "winnerUniverse": {
+          "type": "string",
+          "enum": ["CLASSIQUE", "WESTERN", "GRECE", "JAPON", "BASKET", "FUTURISTE"]
+        },
+        "moveCount": { "type": "integer" },
+        "memberUids": { "type": "array" },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Must be written via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Must be written via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "whitePlayerId",
+        "whiteDisplayName",
+        "whiteUniverse",
+        "whiteElo",
+        "boardUniverse",
+        "timeControlMinutes",
+        "whiteTimeMs",
+        "blackTimeMs",
+        "status",
+        "fen",
+        "turn",
+        "isCheck",
+        "moveCount",
+        "memberUids",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "MatchRecord": {
+      "title": "MatchRecord",
+      "description": "Append-only match result record for player history.",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["CAMPAIGN", "ONLINE"]
+        },
+        "opponentName": { "type": "string" },
+        "opponentUniverse": {
+          "type": "string",
+          "enum": ["CLASSIQUE", "WESTERN", "GRECE", "JAPON", "BASKET", "FUTURISTE"]
+        },
+        "playerUniverse": {
+          "type": "string",
+          "enum": ["CLASSIQUE", "WESTERN", "GRECE", "JAPON", "BASKET", "FUTURISTE"]
+        },
+        "result": {
+          "type": "string",
+          "enum": ["WIN", "LOSS", "DRAW"]
+        },
+        "endReason": {
+          "type": "string",
+          "enum": ["CHECKMATE", "RESIGN", "TIMEOUT", "DRAW"]
+        },
+        "eloDelta": { "type": "integer" },
+        "eloAfter": { "type": "integer" },
+        "movesCount": { "type": "integer" },
+        "timeControlMinutes": { "type": "integer" },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Must be written via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "mode",
+        "opponentName",
+        "opponentUniverse",
+        "playerUniverse",
+        "result",
+        "endReason",
+        "eloDelta",
+        "eloAfter",
+        "movesCount",
+        "timeControlMinutes",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Player campaign progress, unlocked universes, island level, and ratings."
+    },
+    "/users/{userId}/matchHistory/{historyId}": {
+      "schema": { "$ref": "#/entities/MatchRecord" },
+      "description": "Append-only match archive for the authenticated player."
+    },
+    "/onlineMatches/{matchId}": {
+      "schema": { "$ref": "#/entities/OnlineMatch" },
+      "description": "Real-time online multiplayer matches and open matchmaking lobbies."
+    }
+  }
+}

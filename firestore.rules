@@ -1,0 +1,244 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUniverse(u) {
+      return u is string && u in ['CLASSIQUE', 'WESTERN', 'GRECE', 'JAPON', 'BASKET', 'FUTURISTE'];
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+             data.campaignElo is int && data.campaignElo >= 500 && data.campaignElo <= 3500 &&
+             data.onlineElo is int && data.onlineElo >= 100 && data.onlineElo <= 4000 &&
+             isValidUniverse(data.selectedUniverse) &&
+             isValidUniverse(data.selectedBoard) &&
+             data.unlockedUniverses is list &&
+             data.unlockedUniverses.size() >= 1 && data.unlockedUniverses.size() <= 6 &&
+             data.unlockedUniverses[0] is string &&
+             data.westernWins is int && data.westernWins >= 0 && data.westernWins <= 5 &&
+             data.greceWins is int && data.greceWins >= 0 && data.greceWins <= 5 &&
+             data.japonWins is int && data.japonWins >= 0 && data.japonWins <= 5 &&
+             data.basketWins is int && data.basketWins >= 0 && data.basketWins <= 5 &&
+             data.futuristeWins is int && data.futuristeWins >= 0 && data.futuristeWins <= 5 &&
+             data.islandLevel is int && data.islandLevel >= 0 && data.islandLevel <= 5 &&
+             data.animationsEnabled is bool &&
+             data.onlineWins is int && data.onlineWins >= 0 && data.onlineWins <= 100000 &&
+             data.onlineLosses is int && data.onlineLosses >= 0 && data.onlineLosses <= 100000 &&
+             data.onlineDraws is int && data.onlineDraws >= 0 && data.onlineDraws <= 100000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidMatchRecord(data) {
+      return data.mode is string && data.mode in ['CAMPAIGN', 'ONLINE'] &&
+             data.opponentName is string && data.opponentName.size() >= 1 && data.opponentName.size() <= 60 &&
+             isValidUniverse(data.opponentUniverse) &&
+             isValidUniverse(data.playerUniverse) &&
+             data.result is string && data.result in ['WIN', 'LOSS', 'DRAW'] &&
+             data.endReason is string && data.endReason in ['CHECKMATE', 'RESIGN', 'TIMEOUT', 'DRAW'] &&
+             data.eloDelta is int && data.eloDelta >= -500 && data.eloDelta <= 500 &&
+             data.eloAfter is int && data.eloAfter >= 0 && data.eloAfter <= 5000 &&
+             data.movesCount is int && data.movesCount >= 0 && data.movesCount <= 1000 &&
+             data.timeControlMinutes is int && data.timeControlMinutes in [0, 1, 5, 10] &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidOnlineMatch(data) {
+      return data.whitePlayerId is string && data.whitePlayerId.size() >= 1 && data.whitePlayerId.size() <= 128 &&
+             data.whiteDisplayName is string && data.whiteDisplayName.size() >= 1 && data.whiteDisplayName.size() <= 60 &&
+             isValidUniverse(data.whiteUniverse) &&
+             data.whiteElo is int && data.whiteElo >= 100 && data.whiteElo <= 4000 &&
+             (!('blackPlayerId' in data) || data.blackPlayerId == null || (data.blackPlayerId is string && data.blackPlayerId.size() >= 1 && data.blackPlayerId.size() <= 128)) &&
+             (!('blackDisplayName' in data) || data.blackDisplayName == null || (data.blackDisplayName is string && data.blackDisplayName.size() >= 1 && data.blackDisplayName.size() <= 60)) &&
+             (!('blackUniverse' in data) || data.blackUniverse == null || isValidUniverse(data.blackUniverse)) &&
+             (!('blackElo' in data) || data.blackElo == null || (data.blackElo is int && data.blackElo >= 100 && data.blackElo <= 4000)) &&
+             isValidUniverse(data.boardUniverse) &&
+             data.timeControlMinutes is int && data.timeControlMinutes in [1, 5, 10] &&
+             data.whiteTimeMs is int && data.whiteTimeMs >= 0 && data.whiteTimeMs <= 600000 &&
+             data.blackTimeMs is int && data.blackTimeMs >= 0 && data.blackTimeMs <= 600000 &&
+             data.status is string && data.status in ['waiting', 'active', 'checkmate', 'resigned', 'timeout', 'draw', 'cancelled'] &&
+             data.fen is string && data.fen.size() >= 10 && data.fen.size() <= 150 &&
+             data.turn is string && data.turn in ['w', 'b'] &&
+             (!('lastMoveUci' in data) || data.lastMoveUci == null || (data.lastMoveUci is string && data.lastMoveUci.size() <= 10)) &&
+             (!('lastCapturePiece' in data) || data.lastCapturePiece == null || (data.lastCapturePiece is string && data.lastCapturePiece.size() <= 2)) &&
+             (!('lastCaptureVictim' in data) || data.lastCaptureVictim == null || (data.lastCaptureVictim is string && data.lastCaptureVictim.size() <= 2)) &&
+             (!('lastCaptureUniverse' in data) || data.lastCaptureUniverse == null || isValidUniverse(data.lastCaptureUniverse)) &&
+             data.isCheck is bool &&
+             (!('winnerId' in data) || data.winnerId == null || (data.winnerId is string && data.winnerId.size() <= 128)) &&
+             (!('winnerUniverse' in data) || data.winnerUniverse == null || isValidUniverse(data.winnerUniverse)) &&
+             data.moveCount is int && data.moveCount >= 0 && data.moveCount <= 1000 &&
+             data.memberUids is list && data.memberUids.size() >= 1 && data.memberUids.size() <= 2 &&
+             data.memberUids[0] is string &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'campaignElo', 'onlineElo',
+                         'selectedUniverse', 'selectedBoard', 'unlockedUniverses',
+                         'westernWins', 'greceWins', 'japonWins', 'basketWins', 'futuristeWins',
+                         'islandLevel', 'animationsEnabled',
+                         'onlineWins', 'onlineLosses', 'onlineDraws',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'campaignElo', 'onlineElo',
+                         'selectedUniverse', 'selectedBoard', 'unlockedUniverses',
+                         'westernWins', 'greceWins', 'japonWins', 'basketWins', 'futuristeWins',
+                         'islandLevel', 'animationsEnabled',
+                         'onlineWins', 'onlineLosses', 'onlineDraws',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'campaignElo', 'onlineElo',
+                         'selectedUniverse', 'selectedBoard', 'unlockedUniverses',
+                         'westernWins', 'greceWins', 'japonWins', 'basketWins', 'futuristeWins',
+                         'islandLevel', 'animationsEnabled',
+                         'onlineWins', 'onlineLosses', 'onlineDraws',
+                         'updatedAt'
+                       ]);
+
+      allow delete: if false;
+
+      match /matchHistory/{historyId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         isValidId(historyId) &&
+                         request.auth.uid == userId &&
+                         incoming().keys().hasAll([
+                           'mode', 'opponentName', 'opponentUniverse', 'playerUniverse',
+                           'result', 'endReason', 'eloDelta', 'eloAfter',
+                           'movesCount', 'timeControlMinutes', 'createdAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'mode', 'opponentName', 'opponentUniverse', 'playerUniverse',
+                           'result', 'endReason', 'eloDelta', 'eloAfter',
+                           'movesCount', 'timeControlMinutes', 'createdAt'
+                         ]) &&
+                         isValidMatchRecord(incoming());
+
+        allow update, delete: if false;
+      }
+    }
+
+    match /onlineMatches/{matchId} {
+      allow get: if isSignedIn() &&
+                    isValidId(matchId) &&
+                    (request.auth.uid in existing().memberUids || existing().status == 'waiting');
+
+      allow list: if isSignedIn() &&
+                     (request.auth.uid in existing().memberUids || existing().status == 'waiting');
+
+      allow create: if isSignedIn() &&
+                       isValidId(matchId) &&
+                       incoming().whitePlayerId == request.auth.uid &&
+                       incoming().status == 'waiting' &&
+                       incoming().memberUids.size() == 1 &&
+                       incoming().memberUids[0] == request.auth.uid &&
+                       (!('blackPlayerId' in incoming()) || incoming().blackPlayerId == null) &&
+                       (!('winnerId' in incoming()) || incoming().winnerId == null) &&
+                       incoming().keys().hasAll([
+                         'whitePlayerId', 'whiteDisplayName', 'whiteUniverse', 'whiteElo',
+                         'boardUniverse', 'timeControlMinutes', 'whiteTimeMs', 'blackTimeMs',
+                         'status', 'fen', 'turn', 'isCheck', 'moveCount', 'memberUids',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'whitePlayerId', 'whiteDisplayName', 'whiteUniverse', 'whiteElo',
+                         'blackPlayerId', 'blackDisplayName', 'blackUniverse', 'blackElo',
+                         'boardUniverse', 'timeControlMinutes', 'whiteTimeMs', 'blackTimeMs',
+                         'status', 'fen', 'turn', 'lastMoveUci', 'lastCapturePiece',
+                         'lastCaptureVictim', 'lastCaptureUniverse', 'isCheck',
+                         'winnerId', 'winnerUniverse', 'moveCount', 'memberUids',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidOnlineMatch(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(matchId) &&
+                       isValidOnlineMatch(incoming()) &&
+                       existing().status in ['waiting', 'active'] &&
+                       incoming().whitePlayerId == existing().whitePlayerId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().timeControlMinutes == existing().timeControlMinutes &&
+                       incoming().boardUniverse == existing().boardUniverse &&
+                       (
+                         // Action 1: Second player joins a waiting lobby
+                         (
+                           existing().status == 'waiting' &&
+                           incoming().status == 'active' &&
+                           request.auth.uid != existing().whitePlayerId &&
+                           incoming().blackPlayerId == request.auth.uid &&
+                           incoming().memberUids.size() == 2 &&
+                           existing().whitePlayerId in incoming().memberUids &&
+                           request.auth.uid in incoming().memberUids &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'blackPlayerId', 'blackDisplayName', 'blackUniverse', 'blackElo',
+                             'status', 'memberUids', 'updatedAt'
+                           ])
+                         ) ||
+                         // Action 2: Host cancels a waiting lobby
+                         (
+                           existing().status == 'waiting' &&
+                           request.auth.uid == existing().whitePlayerId &&
+                           incoming().status == 'cancelled' &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+                         ) ||
+                         // Action 3: Active match move, capture, resign, timeout, draw, or checkmate
+                         (
+                           existing().status == 'active' &&
+                           request.auth.uid in existing().memberUids &&
+                           incoming().blackPlayerId == existing().blackPlayerId &&
+                           incoming().memberUids == existing().memberUids &&
+                           incoming().status in ['active', 'checkmate', 'resigned', 'timeout', 'draw'] &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'status', 'fen', 'turn', 'whiteTimeMs', 'blackTimeMs',
+                             'lastMoveUci', 'lastCapturePiece', 'lastCaptureVictim',
+                             'lastCaptureUniverse', 'isCheck', 'winnerId',
+                             'winnerUniverse', 'moveCount', 'updatedAt'
+                           ])
+                         )
+                       );
+
+      allow delete: if false;
+    }
+  }
+}

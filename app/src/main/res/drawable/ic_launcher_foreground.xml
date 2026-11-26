@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Lion Ochre Bauhaus Mane Medallion inside 66dp safe zone -->
+    <path
+        android:fillColor="#D98A2B"
+        android:pathData="M54,23 A31,31 0 1,0 54,85 A31,31 0 1,0 54,23 Z"
+        android:strokeWidth="2.4"
+        android:strokeColor="#111111" />
+    <!-- Warm Ivory inner face disc -->
+    <path
+        android:fillColor="#FAF6EC"
+        android:pathData="M54,30 A24,24 0 1,0 54,78 A24,24 0 1,0 54,30 Z"
+        android:strokeWidth="2.0"
+        android:strokeColor="#111111" />
+    <!-- Geometric Crown above Léon's ears -->
+    <path
+        android:fillColor="#111111"
+        android:pathData="M41,38 L44,29 L50,34 L54,26 L58,34 L64,29 L67,38 Z" />
+    <!-- Lion Ears -->
+    <path
+        android:fillColor="#D98A2B"
+        android:pathData="M37,43 A5,5 0 1,0 37,51 A5,5 0 1,0 37,43 Z"
+        android:strokeWidth="1.8"
+        android:strokeColor="#111111" />
+    <path
+        android:fillColor="#D98A2B"
+        android:pathData="M71,43 A5,5 0 1,0 71,51 A5,5 0 1,0 71,43 Z"
+        android:strokeWidth="1.8"
+        android:strokeColor="#111111" />
+    <!-- Expressive Ink Eyes -->
+    <path
+        android:fillColor="#111111"
+        android:pathData="M46,48 A2.5,2.5 0 1,0 46,53 A2.5,2.5 0 1,0 46,48 Z" />
+    <path
+        android:fillColor="#111111"
+        android:pathData="M62,48 A2.5,2.5 0 1,0 62,53 A2.5,2.5 0 1,0 62,48 Z" />
+    <!-- Nose & Smile -->
+    <path
+        android:fillColor="#111111"
+        android:pathData="M50,56 L58,56 L54,61 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M48,64 Q54,69 60,64"
+        android:strokeWidth="2.2"
+        android:strokeColor="#111111"
+        android:strokeLineCap="round" />
+    <!-- Plinth base -->
+    <path
+        android:fillColor="#111111"
+        android:pathData="M38,76 L70,76 L70,81 L38,81 Z" />
+</vector>
