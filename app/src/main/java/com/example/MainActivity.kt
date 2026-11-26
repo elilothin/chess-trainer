@@ -39,6 +39,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.example.domain.bot.BotRoster
 import com.example.data.local.SettingsDataStore
 import com.example.data.local.TrainingDatabase
 import com.example.data.repository.ChessTrainingRepository
@@ -54,7 +57,9 @@ import com.example.ui.screens.LearnHubScreen
 import com.example.ui.screens.LessonsScreen
 import com.example.ui.screens.MiddlegameScreen
 import com.example.ui.screens.OpeningsScreen
-import com.example.ui.screens.PlayAiScreen
+import com.example.ui.screens.GameScreen
+import com.example.ui.screens.PlayHubScreen
+import com.example.ui.screens.ReviewScreen
 import com.example.ui.screens.ProgressScreen
 import com.example.ui.screens.PuzzlesScreen
 import com.example.ui.screens.QuizScreen
@@ -77,6 +82,8 @@ const val ROUTE_HISTORICAL = "historical"
 const val ROUTE_COORDINATES = "coordinates"
 const val ROUTE_QUIZ = "quiz"
 const val ROUTE_PLAY_AI = "play_ai"
+const val ROUTE_GAME = "game/{botId}/{color}/{minutes}"
+const val ROUTE_REVIEW = "review"
 const val ROUTE_PROGRESS = "progress"
 const val ROUTE_SETTINGS = "settings"
 
@@ -129,6 +136,8 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
     val sessions by viewModel.activitySessions.collectAsStateWithLifecycle()
     val pendingPgn by viewModel.pendingAnalysisPgn.collectAsStateWithLifecycle()
     val gamificationStats by viewModel.gamificationStats.collectAsStateWithLifecycle()
+    val playProfile by viewModel.playProfile.collectAsStateWithLifecycle()
+    val reviewData by viewModel.review.collectAsStateWithLifecycle()
 
     val palette = LocalGlassPalette.current
     val tabs = listOf(
@@ -208,6 +217,7 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
                             solvedPuzzlesCount = puzzleProgress.values.count { it.solved },
                             totalPuzzlesCount = viewModel.puzzles.size,
                             stats = gamificationStats,
+                            playProfile = playProfile,
                             onClaimQuest = { viewModel.claimDailyQuest(it) },
                             onNavigate = { route -> navController.navigate(route) },
                             onOpenSettings = { navController.navigate(ROUTE_SETTINGS) }
@@ -222,18 +232,19 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
                         )
                     }
                     composable(ROUTE_PLAY_TAB) {
-                        PlayAiScreen(
+                        PlayHubScreen(
+                            profile = playProfile,
                             playedGames = playedGames,
-                            showCoordinates = settings.showCoordinates,
                             showBackButton = false,
-                            onSaveGame = { pgn, res, w, b, elo, userWhite, moves ->
-                                viewModel.savePlayedGame(pgn, res, w, b, elo, userWhite, moves)
+                            onStartGame = { botId, color, minutes ->
+                                navController.navigate("game/$botId/$color/$minutes")
                             },
-                            onDeleteGame = { viewModel.deletePlayedGame(it) },
+                            onSetStartingElo = { viewModel.setStartingElo(it) },
                             onAnalyzeGame = { pgn ->
                                 viewModel.queuePgnForAnalysis(pgn)
                                 navController.navigate(ROUTE_ANALYSIS)
                             },
+                            onDeleteGame = { viewModel.deletePlayedGame(it) },
                             onBack = { navController.popBackStack() }
                         )
                     }
@@ -345,20 +356,75 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
                         )
                     }
                     composable(ROUTE_PLAY_AI) {
-                        PlayAiScreen(
+                        PlayHubScreen(
+                            profile = playProfile,
                             playedGames = playedGames,
-                            showCoordinates = settings.showCoordinates,
                             showBackButton = true,
-                            onSaveGame = { pgn, res, w, b, elo, userWhite, moves ->
-                                viewModel.savePlayedGame(pgn, res, w, b, elo, userWhite, moves)
+                            onStartGame = { botId, color, minutes ->
+                                navController.navigate("game/$botId/$color/$minutes")
                             },
-                            onDeleteGame = { viewModel.deletePlayedGame(it) },
+                            onSetStartingElo = { viewModel.setStartingElo(it) },
                             onAnalyzeGame = { pgn ->
                                 viewModel.queuePgnForAnalysis(pgn)
                                 navController.navigate(ROUTE_ANALYSIS)
                             },
+                            onDeleteGame = { viewModel.deletePlayedGame(it) },
                             onBack = { navController.popBackStack() }
                         )
+                    }
+                    composable(
+                        route = ROUTE_GAME,
+                        arguments = listOf(
+                            navArgument("botId") { type = NavType.StringType },
+                            navArgument("color") { type = NavType.IntType },
+                            navArgument("minutes") { type = NavType.IntType }
+                        )
+                    ) { entry ->
+                        val botId = entry.arguments?.getString("botId") ?: BotRoster.SPARRING_ID
+                        val color = entry.arguments?.getInt("color") ?: 0
+                        val minutes = entry.arguments?.getInt("minutes") ?: 0
+                        val persona = BotRoster.byId(botId) ?: BotRoster.sparring
+                        val startElo = androidx.compose.runtime.remember { playProfile.botElo(persona) }
+                        val startPlayerElo = androidx.compose.runtime.remember { playProfile.playerElo }
+                        GameScreen(
+                            persona = persona,
+                            botElo = startElo,
+                            playerElo = startPlayerElo,
+                            colorChoice = color,
+                            minutes = minutes,
+                            showCoordinates = settings.showCoordinates,
+                            onComplete = { score, rated -> viewModel.completeGame(persona, startElo, score, rated) },
+                            onSaveGame = { pgn, res, w, b, elo, userWhite, moves ->
+                                viewModel.savePlayedGame(pgn, res, w, b, elo, userWhite, moves)
+                            },
+                            onOpenReview = { data ->
+                                viewModel.openReview(data)
+                                navController.navigate(ROUTE_REVIEW)
+                            },
+                            onRematch = {
+                                navController.popBackStack()
+                                navController.navigate("game/$botId/$color/$minutes")
+                            },
+                            onExit = { navController.popBackStack() }
+                        )
+                    }
+                    composable(ROUTE_REVIEW) {
+                        val data = reviewData
+                        if (data != null) {
+                            ReviewScreen(
+                                data = data,
+                                onAnalyzePgn = { pgn ->
+                                    viewModel.queuePgnForAnalysis(pgn)
+                                    navController.navigate(ROUTE_ANALYSIS)
+                                },
+                                onRematch = {
+                                    navController.popBackStack(ROUTE_REVIEW, inclusive = true)
+                                    navController.popBackStack()
+                                    navController.navigate("game/${data.botId}/${if (data.userIsWhite) 1 else 0}/0")
+                                },
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
                     }
                     composable(ROUTE_PROGRESS) {
                         ProgressScreen(

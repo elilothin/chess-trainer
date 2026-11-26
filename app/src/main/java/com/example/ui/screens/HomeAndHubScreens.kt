@@ -57,7 +57,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.domain.bot.BotRoster
+import com.example.domain.bot.PlayProfile
 import com.example.domain.model.DailyQuestProgress
+import com.example.ui.components.BotMonogram
+import com.example.ui.components.InkButton
+import com.example.ui.components.SectionLabel
 import com.example.domain.model.UserGamificationStats
 import com.example.ui.components.BauhausGaugeBar
 import com.example.ui.components.EditorialKeywordPill
@@ -89,6 +94,7 @@ fun HomeScreen(
     solvedPuzzlesCount: Int,
     totalPuzzlesCount: Int,
     stats: UserGamificationStats,
+    playProfile: PlayProfile,
     onClaimQuest: (DailyQuestProgress) -> Unit,
     onNavigate: (String) -> Unit,
     onOpenSettings: () -> Unit
@@ -155,8 +161,8 @@ fun HomeScreen(
         ),
         ModuleTileItem(
             "play_ai",
-            "Jouer contre l'IA", "Play vs AI",
-            "Elo 400 à 2500 hors ligne", "Offline Elo 400–2500",
+            "Jouer", "Play",
+            "9 adversaires, coach en direct", "9 opponents, live coach",
             Icons.Default.PlayArrow, palette.textPrimary
         ),
         ModuleTileItem(
@@ -193,8 +199,8 @@ fun HomeScreen(
                         )
                         Text(
                             text = tr(
-                                "C O N C E P T  •  100% HORS LIGNE",
-                                "C O N C E P T  •  100% OFFLINE"
+                                "COACH D'ÉCHECS  ·  100% HORS LIGNE",
+                                "CHESS COACH  ·  100% OFFLINE"
                             ),
                             fontFamily = JetBrainsMonoFontFamily,
                             fontSize = 10.sp,
@@ -218,66 +224,78 @@ fun HomeScreen(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    EditorialKeywordPill("Elo ~${stats.estimatedTacticalElo}", highlighted = true)
-                    EditorialKeywordPill(tr("Gratuit", "Free"))
-                    EditorialKeywordPill("Open Source")
-                    EditorialKeywordPill("Bauhaus")
-                }
             }
         }
 
-        // Gamified Vertical Lion Hero Viewport (inspired by reference phone frame!)
+        // Carte « Duel » : ton Elo, ton prochain adversaire, un seul bouton
         item(span = { GridItemSpan(maxLineSpan) }) {
-            LionHeroStage(
-                xp = stats.totalXp,
-                goldenCrowns = stats.goldenCrowns,
-                streakDays = stats.currentStreakDays,
-                estimatedElo = stats.estimatedTacticalElo,
-                rank = stats.rank,
-                levelProgressFraction = stats.levelProgressFraction,
-                levelProgressPercent = stats.levelProgressPercent
-            )
-        }
-
-        // Quick Primary Actions Strip
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            val next = BotRoster.ladder.lastOrNull { playProfile.isUnlocked(it) && playProfile.botElo(it) <= playProfile.playerElo + 150 }
+                ?: BotRoster.ladder.first()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(palette.textPrimary)
+                    .padding(20.dp)
             ) {
-                Button(
-                    onClick = { onNavigate("puzzles") },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.lionMane,
-                        contentColor = Color(0xFF111111)
-                    ),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .minimumInteractiveComponentSize()
-                        .border(1.5.dp, palette.glassBorderStart, RoundedCornerShape(14.dp))
-                        .testTag("quick_puzzles_btn")
-                ) {
-                    Text(tr("Puzzles Tactiques", "Tactical Puzzles"), fontWeight = FontWeight.Bold)
+                Text(
+                    text = tr("TON ELO", "YOUR RATING"),
+                    fontFamily = JetBrainsMonoFontFamily,
+                    fontSize = 11.sp,
+                    letterSpacing = 1.6.sp,
+                    color = palette.bgTop.copy(alpha = 0.65f)
+                )
+                Text(
+                    text = playProfile.playerElo.toString(),
+                    fontFamily = JetBrainsMonoFontFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 60.sp,
+                    color = palette.bgTop
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    BotMonogram(next, size = 38.dp, inverted = true)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = tr("Prochain adversaire", "Next opponent"),
+                            fontSize = 11.sp,
+                            color = palette.bgTop.copy(alpha = 0.65f)
+                        )
+                        Text(
+                            text = "${tr(next.nameFr, next.nameEn)} · ${playProfile.botElo(next)}",
+                            fontWeight = FontWeight.Bold,
+                            color = palette.bgTop
+                        )
+                    }
                 }
-                Button(
-                    onClick = { onNavigate("play_ai") },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = palette.textPrimary,
-                        contentColor = palette.bgTop
-                    ),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .minimumInteractiveComponentSize()
-                        .testTag("quick_play_ai_btn")
-                ) {
-                    Text(tr("Défier l'IA", "Play vs AI"), fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(14.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(
+                        onClick = { onNavigate("game/${next.id}/2/0") },
+                        colors = ButtonDefaults.buttonColors(containerColor = palette.bgTop, contentColor = palette.textPrimary),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .testTag("quick_play_ai_btn")
+                    ) {
+                        Text(tr("Jouer", "Play"), fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = { onNavigate("puzzles") },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = palette.bgTop.copy(alpha = 0.14f),
+                            contentColor = palette.bgTop
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                            .testTag("quick_puzzles_btn")
+                    ) {
+                        Text(tr("Puzzles", "Puzzles"), fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
@@ -291,7 +309,7 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = tr("MISSIONS DU JOUR DE LÉON", "LEO'S DAILY MISSIONS"),
+                        text = tr("MISSIONS DU JOUR", "DAILY MISSIONS"),
                         fontFamily = JetBrainsMonoFontFamily,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -360,11 +378,6 @@ fun HomeScreen(
             }
         }
 
-        // Lion Evolution Strip (echoing CAT STATE from reference design!)
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            LionStateEvolutionStrip(currentRank = stats.rank)
-        }
-
         item(span = { GridItemSpan(maxLineSpan) }) {
             Row(
                 modifier = Modifier
@@ -418,7 +431,7 @@ fun HomeScreen(
                         )
                     }
                     if (item.badgeText != null) {
-                        GlassBadge(text = item.badgeText, color = item.accentColor)
+                        GlassBadge(text = item.badgeText, color = palette.textSecondary)
                     } else {
                         Text(
                             text = num,
