@@ -28,15 +28,16 @@ class BotEngineTest {
     @Test
     fun coachFlagsHangingQueen() {
         // Les Blancs jouent Dd1-d5?? dans une position où le pion e6 prend la dame
-        val fen = "rnbqkbnr/pppp1ppp/4p3/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-        val note = MoveCoach.analyzeMove(fen, "d1h5", ply = 1)
+        val fen = "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"
+        val note = MoveCoach.analyzeMove(fen, "d1g4", ply = 1)
         assertNotNull(note)
         println("note: ${note!!.grade} ${note.cause} ${note.san} best=${note.bestSan}")
+        assertTrue(note.grade == Grade.BLUNDER)
     }
 
     @Test
     fun coachFlagsMovedIntoCapture() {
-        val fen = "rnbqkbnr/pppppppp/8/8/8/5n2/PPPPPPPP/RNBQKB1R w KQkq - 0 1"
+        val fen = "rnbqkbnr/pppppppp/8/8/8/7n/PPPPPPPP/RNBQKB1R w KQkq - 0 1"
         // le cavalier noir en f3 : e2xf3 gagne un cavalier. On joue autre chose : a2a3
         val note = MoveCoach.analyzeMove(fen, "a2a3", ply = 1)
         assertNotNull(note)
