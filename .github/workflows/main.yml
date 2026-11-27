@@ -5,6 +5,9 @@ on:
     branches: [ principal, main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -85,3 +88,18 @@ jobs:
       with:
         name: app-debug
         path: app/build/outputs/apk/debug/app-debug.apk
+
+    # Publie l'APK dans l'onglet Releases (téléchargeable sans passer par Actions)
+    - name: Publier la release
+      if: github.event_name != 'pull_request'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        cp app/build/outputs/apk/debug/app-debug.apk ChessTrainer.apk
+        TAG="v1.0.${{ github.run_number }}"
+        gh release create "$TAG" ChessTrainer.apk \
+          --repo "${{ github.repository }}" \
+          --target "${{ github.sha }}" \
+          --title "Chess Trainer $TAG" \
+          --notes "APK Android (debug). Bots Elo 400-2200, coach d'analyse, nouveau design. Installer : télécharger ChessTrainer.apk puis l'ouvrir sur le téléphone (autoriser les sources inconnues)." \
+          --latest
