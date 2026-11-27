@@ -4,6 +4,7 @@ import com.example.domain.bot.BotPlayer
 import com.example.domain.bot.BotProfiles
 import com.example.domain.bot.BotRoster
 import com.example.domain.bot.Cause
+import com.example.domain.bot.Grade
 import com.example.domain.bot.MoveCoach
 import com.example.domain.bot.PlayProfile
 import com.example.domain.bot.RatingEngine
