@@ -222,4 +222,5 @@ class ChessTrainingRepository(
     suspend fun setTextScale(scale: Float) = settingsStore.setTextScale(scale)
     suspend fun setShowCoordinates(show: Boolean) = settingsStore.setShowCoordinates(show)
     suspend fun setHapticsEnabled(enabled: Boolean) = settingsStore.setHapticsEnabled(enabled)
+    suspend fun setSoundEnabled(enabled: Boolean) = settingsStore.setSoundEnabled(enabled)
 }

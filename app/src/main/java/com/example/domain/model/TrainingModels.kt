@@ -185,7 +185,8 @@ data class UserSettings(
     val language: AppLanguage = AppLanguage.FR,
     val textScale: Float = 1.0f,
     val showCoordinates: Boolean = true,
-    val hapticsEnabled: Boolean = true
+    val hapticsEnabled: Boolean = true,
+    val soundEnabled: Boolean = true
 )
 
 enum class LionMood {

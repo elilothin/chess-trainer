@@ -427,6 +427,7 @@ fun SettingsScreen(
     onSetTextScale: (Float) -> Unit,
     onSetShowCoordinates: (Boolean) -> Unit,
     onSetHaptics: (Boolean) -> Unit,
+    onSetSound: (Boolean) -> Unit,
     onImportPgnPack: (String) -> Unit,
     onBack: () -> Unit
 ) {
@@ -509,8 +510,16 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(tr("Retour haptique", "Haptic feedback"), color = palette.textPrimary)
+                    Text(tr("Vibrations (échec, roque, prise)", "Vibrations (check, castling, capture)"), color = palette.textPrimary)
                     Switch(checked = settings.hapticsEnabled, onCheckedChange = onSetHaptics)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(tr("Sons des pièces", "Piece sounds"), color = palette.textPrimary)
+                    Switch(checked = settings.soundEnabled, onCheckedChange = onSetSound)
                 }
             }
         }

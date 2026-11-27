@@ -60,6 +60,8 @@ import com.example.domain.chess.ChessEngine
 import com.example.domain.chess.PgnParser
 import com.example.domain.chess.rememberChessEngine
 import com.example.domain.model.GameOutcome
+import com.example.ui.feedback.LocalGameFeedback
+import com.example.ui.feedback.Sfx
 import com.example.domain.model.PieceColor
 import com.example.domain.model.Square
 import com.example.ui.GameReviewData
@@ -99,6 +101,7 @@ fun GameScreen(
     val botName = if (isEn) persona.nameEn else persona.nameFr
     val userLabel = tr("Joueur", "Player")
 
+    val feedback = LocalGameFeedback.current
     val engine = rememberChessEngine()
     val engineState by engine.state.collectAsStateWithLifecycle()
     val board = engineState.board
@@ -139,6 +142,12 @@ fun GameScreen(
             "1-0" -> if (userWhite) 1.0 else 0.0
             "0-1" -> if (userWhite) 0.0 else 1.0
             else -> 0.5
+        }
+        feedback?.let { fb ->
+            scope.launch {
+                kotlinx.coroutines.delay(450) // laisse finir le son du dernier coup
+                fb.onGameOver(if (score > 0.75) Sfx.WIN else if (score < 0.25) Sfx.LOSE else Sfx.DRAW)
+            }
         }
         val san = engine.state.value.moveHistorySan
         val userName = userLabel

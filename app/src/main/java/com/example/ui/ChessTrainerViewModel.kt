@@ -228,6 +228,10 @@ class ChessTrainerViewModel(
         viewModelScope.launch { repository.setShowCoordinates(show) }
     }
 
+    fun setSoundEnabled(enabled: Boolean) {
+        viewModelScope.launch { repository.setSoundEnabled(enabled) }
+    }
+
     fun setHapticsEnabled(enabled: Boolean) {
         viewModelScope.launch { repository.setHapticsEnabled(enabled) }
     }

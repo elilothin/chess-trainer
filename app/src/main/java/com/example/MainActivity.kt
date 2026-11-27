@@ -24,7 +24,10 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -47,6 +50,8 @@ import com.example.data.local.TrainingDatabase
 import com.example.data.repository.ChessTrainingRepository
 import com.example.ui.ChessTrainerViewModel
 import com.example.ui.components.GlassBackground
+import com.example.ui.feedback.GameFeedback
+import com.example.ui.feedback.LocalGameFeedback
 import com.example.ui.components.tr
 import com.example.ui.screens.AnalysisScreen
 import com.example.ui.screens.CoordinatesScreen
@@ -111,12 +116,19 @@ class MainActivity : ComponentActivity() {
             )
             val settings by viewModel.settings.collectAsStateWithLifecycle()
 
+            val feedback = remember { GameFeedback(applicationContext) }
+            DisposableEffect(feedback) { onDispose { feedback.release() } }
+            feedback.soundEnabled = settings.soundEnabled
+            feedback.hapticsEnabled = settings.hapticsEnabled
+
             EchecsCoachTheme(
                 themeMode = settings.themeMode,
                 language = settings.language,
                 textScale = settings.textScale
             ) {
-                ChessTrainerApp(viewModel = viewModel)
+                CompositionLocalProvider(LocalGameFeedback provides feedback) {
+                    ChessTrainerApp(viewModel = viewModel)
+                }
             }
         }
     }
@@ -448,6 +460,7 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
                             onSetTextScale = { viewModel.setTextScale(it) },
                             onSetShowCoordinates = { viewModel.setShowCoordinates(it) },
                             onSetHaptics = { viewModel.setHapticsEnabled(it) },
+                            onSetSound = { viewModel.setSoundEnabled(it) },
                             onImportPgnPack = { pgn ->
                                 viewModel.queuePgnForAnalysis(pgn)
                                 navController.navigate(ROUTE_ANALYSIS)

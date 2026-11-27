@@ -28,6 +28,7 @@ class SettingsDataStore(private val context: Context) {
         val TEXT_SCALE = floatPreferencesKey("text_scale")
         val SHOW_COORDINATES = booleanPreferencesKey("show_coordinates")
         val HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
+        val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
         val PLAY_PROFILE = stringPreferencesKey("play_profile")
     }
 
@@ -39,7 +40,8 @@ class SettingsDataStore(private val context: Context) {
             language = runCatching { AppLanguage.valueOf(langStr) }.getOrDefault(AppLanguage.FR),
             textScale = prefs[Keys.TEXT_SCALE] ?: 1.0f,
             showCoordinates = prefs[Keys.SHOW_COORDINATES] ?: true,
-            hapticsEnabled = prefs[Keys.HAPTICS_ENABLED] ?: true
+            hapticsEnabled = prefs[Keys.HAPTICS_ENABLED] ?: true,
+            soundEnabled = prefs[Keys.SOUND_ENABLED] ?: true
         )
     }
 
@@ -61,6 +63,10 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun setHapticsEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.HAPTICS_ENABLED] = enabled }
+    }
+
+    suspend fun setSoundEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.SOUND_ENABLED] = enabled }
     }
 
     val playProfileFlow: Flow<PlayProfile> = context.dataStore.data.map { prefs ->
