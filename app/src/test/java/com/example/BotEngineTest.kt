@@ -138,3 +138,20 @@ class OnlineRoomTest {
         org.junit.Assert.assertEquals("x y", m["a"]); org.junit.Assert.assertEquals("12", m["b"]); org.junit.Assert.assertEquals("", m["c"])
     }
 }
+
+class HistoricalGamesTest {
+    @org.junit.Test
+    fun extraGamesAreLegal() {
+        val expectedPlies = mapOf(
+            "hist_fischer_spassky_g6" to 81, "hist_anderssen_kieseritzky" to 45,
+            "hist_anand_carlsen_2013_g4" to 127, "hist_carlsen_caruana_2018_g11" to 110,
+            "hist_karjakin_carlsen_2016_g2" to 65
+        )
+        for (g in com.example.data.content.ExtraHistoricalGames.games) {
+            val parsed = com.example.domain.chess.PgnParser.parse(g.pgn)
+            org.junit.Assert.assertEquals("plies of ${g.id}", expectedPlies[g.id], parsed.moves.size)
+            g.commentsByPly.keys.forEach { org.junit.Assert.assertTrue("comment ply ${g.id}:$it", it in 1..parsed.moves.size) }
+            println("note4: ${g.id} ok ${parsed.moves.size}")
+        }
+    }
+}

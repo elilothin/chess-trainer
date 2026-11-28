@@ -80,6 +80,13 @@ fun VersusScreen(
     val board = engineState.board
     val n = engineState.moveHistoryUci.size
 
+    val sUnstable = tr("Connexion instable… nouvelle tentative", "Unstable connection… retrying")
+    val sBadUrl = tr("Adresse invalide : elle doit commencer par https://", "Invalid address: must start with https://")
+    val sCantReachLong = tr("Impossible de joindre la base. Vérifie l'adresse et ta connexion.", "Can't reach the database. Check the address and your connection.")
+    val sNotFound = tr("Salle introuvable.", "Room not found.")
+    val sFull = tr("Cette salle est déjà complète.", "This room is already full.")
+    val sCantReach = tr("Impossible de joindre la base.", "Can't reach the database.")
+
     var phase by remember { mutableStateOf(if (!online) Phase.PLAYING else if (OnlineRoom.normalizeDbUrl(dbUrl) == null) Phase.SETUP else Phase.LOBBY) }
     var result by remember { mutableStateOf<String?>(null) }
     var advantage by remember { mutableStateOf<Advantage?>(null) }
@@ -141,7 +148,7 @@ fun VersusScreen(
         while (true) {
             delay(1000)
             val snap = runCatching { room.poll(code) }.getOrNull()
-            if (snap == null) { error = tr("Connexion instable… nouvelle tentative", "Unstable connection… retrying"); continue }
+            if (snap == null) { error = sUnstable; continue }
             error = null
             if (phase == Phase.WAITING && snap.black.isNotEmpty()) phase = Phase.PLAYING
             if (phase == Phase.PLAYING) {
@@ -204,7 +211,7 @@ fun VersusScreen(
                         text = tr("Enregistrer", "Save"),
                         onClick = {
                             val ok = OnlineRoom.normalizeDbUrl(urlInput)
-                            if (ok == null) error = tr("Adresse invalide : elle doit commencer par https://", "Invalid address: must start with https://")
+                            if (ok == null) error = sBadUrl
                             else { error = null; onSaveDbUrl(ok); phase = Phase.LOBBY }
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -224,7 +231,7 @@ fun VersusScreen(
                                     val c = OnlineRoom.newCode()
                                     runCatching { room.create(c, uid) }
                                         .onSuccess { code = c; myColor = PieceColor.WHITE; engine.reset(); result = null; error = null; phase = Phase.WAITING }
-                                        .onFailure { error = tr("Impossible de joindre la base. Vérifie l'adresse et ta connexion.", "Can't reach the database. Check the address and your connection.") }
+                                        .onFailure { error = sCantReachLong }
                                 }
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -250,11 +257,11 @@ fun VersusScreen(
                                         .onSuccess { r ->
                                             when (r) {
                                                 JoinResult.OK -> { code = codeInput; myColor = PieceColor.BLACK; engine.reset(); result = null; error = null; phase = Phase.PLAYING }
-                                                JoinResult.NOT_FOUND -> error = tr("Salle introuvable.", "Room not found.")
-                                                JoinResult.FULL -> error = tr("Cette salle est déjà complète.", "This room is already full.")
+                                                JoinResult.NOT_FOUND -> error = sNotFound
+                                                JoinResult.FULL -> error = sFull
                                             }
                                         }
-                                        .onFailure { error = tr("Impossible de joindre la base.", "Can't reach the database.") }
+                                        .onFailure { error = sCantReach }
                                 }
                             },
                             modifier = Modifier.fillMaxWidth()

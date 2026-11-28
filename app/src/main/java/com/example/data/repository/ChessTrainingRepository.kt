@@ -55,7 +55,7 @@ class ChessTrainingRepository(
     fun getClassicOpenings(): List<OpeningInfo> = OpeningsAndMiddlegameContent.classicOpenings
     fun getMiddlegameExercises(): List<MiddlegameExercise> = OpeningsAndMiddlegameContent.middlegameExercises
     fun getEndgameItems(): List<EndgameModuleItem> = EndgamesHistoryQuizContent.endgameItems
-    fun getHistoricalGames(): List<HistoricalGame> = EndgamesHistoryQuizContent.historicalGames
+    fun getHistoricalGames(): List<HistoricalGame> = EndgamesHistoryQuizContent.historicalGames + com.example.data.content.ExtraHistoricalGames.games
     fun getQuizQuestions(): List<QuizQuestion> = EndgamesHistoryQuizContent.quizQuestions
 
     suspend fun ensureStarterRepertoire() {
