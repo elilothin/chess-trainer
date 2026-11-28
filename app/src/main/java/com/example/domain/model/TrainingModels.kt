@@ -186,7 +186,11 @@ data class UserSettings(
     val textScale: Float = 1.0f,
     val showCoordinates: Boolean = true,
     val hapticsEnabled: Boolean = true,
-    val soundEnabled: Boolean = true
+    val soundEnabled: Boolean = true,
+    val boardTheme: String = "classic",
+    val pieceStyle: String = "relief",
+    val soundPack: String = "wood",
+    val soundVolume: Float = 0.85f
 )
 
 enum class LionMood {

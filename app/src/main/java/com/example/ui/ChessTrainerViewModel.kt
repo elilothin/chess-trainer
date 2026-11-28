@@ -235,6 +235,11 @@ class ChessTrainerViewModel(
         viewModelScope.launch { repository.setShowCoordinates(show) }
     }
 
+    fun setBoardTheme(id: String) { viewModelScope.launch { repository.setBoardTheme(id) } }
+    fun setPieceStyle(id: String) { viewModelScope.launch { repository.setPieceStyle(id) } }
+    fun setSoundPack(id: String) { viewModelScope.launch { repository.setSoundPack(id) } }
+    fun setSoundVolume(v: Float) { viewModelScope.launch { repository.setSoundVolume(v) } }
+
     fun setSoundEnabled(enabled: Boolean) {
         viewModelScope.launch { repository.setSoundEnabled(enabled) }
     }

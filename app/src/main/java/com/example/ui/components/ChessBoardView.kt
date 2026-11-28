@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import com.example.ui.feedback.LocalGameFeedback
+import com.example.ui.theme.LocalBoardTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -80,6 +81,9 @@ fun ChessBoardView(
     onSquareClick: (Square) -> Unit = {}
 ) {
     val palette = LocalGlassPalette.current
+    val boardTheme = LocalBoardTheme.current
+    val lightSquareColor = boardTheme.light ?: palette.boardLightSquare
+    val darkSquareColor = boardTheme.dark ?: palette.boardDarkSquare
     val feedback = LocalGameFeedback.current
     val inCheckWhite = ChessEngine.isInCheck(board, PieceColor.WHITE)
     val inCheckBlack = ChessEngine.isInCheck(board, PieceColor.BLACK)
@@ -145,7 +149,7 @@ fun ChessBoardView(
                                 val boardCol = if (flipped) 7 - displayCol else displayCol
                                 val sq = Square(boardRow, boardCol)
                                 val isLight = (boardRow + boardCol) % 2 == 0
-                                val baseColor = if (isLight) palette.boardLightSquare else palette.boardDarkSquare
+                                val baseColor = if (isLight) lightSquareColor else darkSquareColor
 
                                 val isSelected = sq == selectedSquare
                                 val isLastMove = lastMove != null && (sq == lastMove.from || sq == lastMove.to)
@@ -196,9 +200,9 @@ fun ChessBoardView(
                                     }
 
                                     val coordTextColor = if (isLight) {
-                                        palette.boardDarkSquare.copy(alpha = 0.85f)
+                                        darkSquareColor.copy(alpha = 0.85f)
                                     } else {
-                                        palette.boardLightSquare.copy(alpha = 0.95f)
+                                        lightSquareColor.copy(alpha = 0.95f)
                                     }
                                     if (rankLabel != null) {
                                         Text(

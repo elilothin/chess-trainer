@@ -74,6 +74,12 @@ import com.example.data.repository.ChessTrainingRepository
 import com.example.ui.ChessTrainerViewModel
 import com.example.ui.components.GlassBackground
 import com.example.ui.feedback.GameFeedback
+import com.example.ui.feedback.SoundPack
+import com.example.ui.screens.CustomizeScreen
+import com.example.ui.theme.BoardTheme
+import com.example.ui.theme.LocalBoardTheme
+import com.example.ui.theme.LocalPieceStyle
+import com.example.ui.theme.PieceStyle
 import com.example.ui.feedback.LocalGameFeedback
 import com.example.ui.components.tr
 import com.example.ui.screens.AnalysisScreen
@@ -117,6 +123,7 @@ const val ROUTE_VERSUS_LOCAL = "versus/local"
 const val ROUTE_VERSUS_ONLINE = "versus/online"
 const val ROUTE_PROGRESS = "progress"
 const val ROUTE_SETTINGS = "settings"
+const val ROUTE_CUSTOMIZE = "customize"
 
 private data class BottomTab(
     val route: String,
@@ -146,13 +153,19 @@ class MainActivity : ComponentActivity() {
             DisposableEffect(feedback) { onDispose { feedback.release() } }
             feedback.soundEnabled = settings.soundEnabled
             feedback.hapticsEnabled = settings.hapticsEnabled
+            feedback.volume = settings.soundVolume
+            feedback.setPack(SoundPack.fromId(settings.soundPack))
 
             EchecsCoachTheme(
                 themeMode = settings.themeMode,
                 language = settings.language,
                 textScale = settings.textScale
             ) {
-                CompositionLocalProvider(LocalGameFeedback provides feedback) {
+                CompositionLocalProvider(
+                    LocalGameFeedback provides feedback,
+                    LocalBoardTheme provides BoardTheme.fromId(settings.boardTheme),
+                    LocalPieceStyle provides PieceStyle.fromId(settings.pieceStyle)
+                ) {
                     ChessTrainerApp(viewModel = viewModel)
                 }
             }
@@ -256,6 +269,18 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
                             totalLessonsCount = viewModel.lessons.size,
                             onNavigate = { route -> navController.navigate(route) },
                             onOpenSettings = { navController.navigate(ROUTE_SETTINGS) }
+                        )
+                    }
+                    composable(ROUTE_CUSTOMIZE) {
+                        CustomizeScreen(
+                            settings = settings,
+                            onBoardTheme = { viewModel.setBoardTheme(it) },
+                            onPieceStyle = { viewModel.setPieceStyle(it) },
+                            onSoundPack = { viewModel.setSoundPack(it) },
+                            onVolume = { viewModel.setSoundVolume(it) },
+                            onSoundEnabled = { viewModel.setSoundEnabled(it) },
+                            onHaptics = { viewModel.setHapticsEnabled(it) },
+                            onBack = { navController.popBackStack() }
                         )
                     }
                     composable(ROUTE_VERSUS_LOCAL) {
@@ -497,6 +522,7 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
                             onSetShowCoordinates = { viewModel.setShowCoordinates(it) },
                             onSetHaptics = { viewModel.setHapticsEnabled(it) },
                             onSetSound = { viewModel.setSoundEnabled(it) },
+                            onOpenCustomize = { navController.navigate(ROUTE_CUSTOMIZE) },
                             onImportPgnPack = { pgn ->
                                 viewModel.queuePgnForAnalysis(pgn)
                                 navController.navigate(ROUTE_ANALYSIS)

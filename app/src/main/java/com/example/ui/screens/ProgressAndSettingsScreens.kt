@@ -428,6 +428,7 @@ fun SettingsScreen(
     onSetShowCoordinates: (Boolean) -> Unit,
     onSetHaptics: (Boolean) -> Unit,
     onSetSound: (Boolean) -> Unit,
+    onOpenCustomize: () -> Unit,
     onImportPgnPack: (String) -> Unit,
     onBack: () -> Unit
 ) {
@@ -521,6 +522,12 @@ fun SettingsScreen(
                     Text(tr("Sons des pièces", "Piece sounds"), color = palette.textPrimary)
                     Switch(checked = settings.soundEnabled, onCheckedChange = onSetSound)
                 }
+                Spacer(Modifier.height(10.dp))
+                com.example.ui.components.LineButton(
+                    text = tr("Personnaliser : plateau, pièces, sons", "Customize: board, pieces, sounds"),
+                    onClick = onOpenCustomize,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
 

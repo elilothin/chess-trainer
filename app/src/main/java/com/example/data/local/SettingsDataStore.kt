@@ -29,6 +29,10 @@ class SettingsDataStore(private val context: Context) {
         val SHOW_COORDINATES = booleanPreferencesKey("show_coordinates")
         val HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
         val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
+        val BOARD_THEME = stringPreferencesKey("board_theme")
+        val PIECE_STYLE = stringPreferencesKey("piece_style")
+        val SOUND_PACK = stringPreferencesKey("sound_pack")
+        val SOUND_VOLUME = floatPreferencesKey("sound_volume")
         val ONLINE_DB_URL = stringPreferencesKey("online_db_url")
         val PLAY_PROFILE = stringPreferencesKey("play_profile")
     }
@@ -42,7 +46,11 @@ class SettingsDataStore(private val context: Context) {
             textScale = prefs[Keys.TEXT_SCALE] ?: 1.0f,
             showCoordinates = prefs[Keys.SHOW_COORDINATES] ?: true,
             hapticsEnabled = prefs[Keys.HAPTICS_ENABLED] ?: true,
-            soundEnabled = prefs[Keys.SOUND_ENABLED] ?: true
+            soundEnabled = prefs[Keys.SOUND_ENABLED] ?: true,
+            boardTheme = prefs[Keys.BOARD_THEME] ?: "classic",
+            pieceStyle = prefs[Keys.PIECE_STYLE] ?: "relief",
+            soundPack = prefs[Keys.SOUND_PACK] ?: "wood",
+            soundVolume = prefs[Keys.SOUND_VOLUME] ?: 0.85f
         )
     }
 
@@ -69,6 +77,11 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setSoundEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.SOUND_ENABLED] = enabled }
     }
+
+    suspend fun setBoardTheme(id: String) { context.dataStore.edit { it[Keys.BOARD_THEME] = id } }
+    suspend fun setPieceStyle(id: String) { context.dataStore.edit { it[Keys.PIECE_STYLE] = id } }
+    suspend fun setSoundPack(id: String) { context.dataStore.edit { it[Keys.SOUND_PACK] = id } }
+    suspend fun setSoundVolume(v: Float) { context.dataStore.edit { it[Keys.SOUND_VOLUME] = v } }
 
     val onlineDbUrlFlow: Flow<String> = context.dataStore.data.map { it[Keys.ONLINE_DB_URL].orEmpty() }
 

@@ -225,4 +225,8 @@ class ChessTrainingRepository(
     suspend fun setShowCoordinates(show: Boolean) = settingsStore.setShowCoordinates(show)
     suspend fun setHapticsEnabled(enabled: Boolean) = settingsStore.setHapticsEnabled(enabled)
     suspend fun setSoundEnabled(enabled: Boolean) = settingsStore.setSoundEnabled(enabled)
+    suspend fun setBoardTheme(id: String) = settingsStore.setBoardTheme(id)
+    suspend fun setPieceStyle(id: String) = settingsStore.setPieceStyle(id)
+    suspend fun setSoundPack(id: String) = settingsStore.setSoundPack(id)
+    suspend fun setSoundVolume(v: Float) = settingsStore.setSoundVolume(v)
 }

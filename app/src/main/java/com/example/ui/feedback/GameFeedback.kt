@@ -10,18 +10,19 @@ import android.os.VibratorManager
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.example.R
 
-/** Effets sonores du jeu (fichiers synthétisés dans res/raw). */
-enum class Sfx(val res: Int) {
-    MOVE(R.raw.snd_move),
-    CAPTURE(R.raw.snd_capture),
-    CASTLE(R.raw.snd_castle),
-    CHECK(R.raw.snd_check),
-    PROMOTE(R.raw.snd_promote),
-    WIN(R.raw.snd_win),
-    LOSE(R.raw.snd_lose),
-    DRAW(R.raw.snd_draw),
-    ILLEGAL(R.raw.snd_illegal),
-    START(R.raw.snd_start)
+/** Effets sonores du jeu. Les fichiers sont res/raw/snd_<pack>_<nom>.wav. */
+enum class Sfx { MOVE, CAPTURE, CASTLE, CHECK, PROMOTE, WIN, LOSE, DRAW, ILLEGAL, START }
+
+/** Familles de sons. */
+enum class SoundPack(val id: String, val fr: String, val en: String) {
+    WOOD("wood", "Bois", "Wood"),
+    METAL("metal", "Métal", "Metal"),
+    GLASS("glass", "Verre", "Glass"),
+    FUTURE("future", "Futuriste", "Futuristic");
+
+    companion object {
+        fun fromId(id: String?) = values().firstOrNull { it.id == id } ?: WOOD
+    }
 }
 
 /** Nature d'un coup, déduite de la différence entre deux positions. */
@@ -56,17 +57,33 @@ class GameFeedback(context: Context) {
 
     @Volatile var soundEnabled: Boolean = true
     @Volatile var hapticsEnabled: Boolean = true
+    @Volatile var volume: Float = 0.85f
+    private var pack: SoundPack? = null
 
     init {
-        pool.setOnLoadCompleteListener { _, sampleId, status -> if (status == 0) ready.add(sampleId) }
-        Sfx.values().forEach { sfx -> runCatching { ids[sfx] = pool.load(appContext, sfx.res, 1) } }
+        pool.setOnLoadCompleteListener { _, sampleId, status -> if (status == 0) synchronized(ready) { ready.add(sampleId) } }
+        setPack(SoundPack.WOOD)
     }
 
-    fun play(sfx: Sfx, volume: Float = 1f) {
+    /** Charge un autre pack de sons (remplace l'ancien). */
+    fun setPack(newPack: SoundPack) {
+        if (pack == newPack) return
+        pack = newPack
+        ids.values.forEach { runCatching { pool.unload(it) } }
+        ids.clear()
+        synchronized(ready) { ready.clear() }
+        Sfx.values().forEach { sfx ->
+            val res = appContext.resources.getIdentifier("snd_${newPack.id}_${sfx.name.lowercase()}", "raw", appContext.packageName)
+            if (res != 0) runCatching { ids[sfx] = pool.load(appContext, res, 1) }
+        }
+    }
+
+    fun play(sfx: Sfx, gain: Float = 1f) {
         if (!soundEnabled) return
         val id = ids[sfx] ?: return
-        if (id !in ready) return
-        pool.play(id, volume, volume, 1, 0, 1f)
+        if (synchronized(ready) { id !in ready }) return
+        val v = (volume * gain).coerceIn(0f, 1f)
+        pool.play(id, v, v, 1, 0, 1f)
     }
 
     /** Son + vibration adaptés à un coup. */
