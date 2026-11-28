@@ -1,6 +1,27 @@
 package com.example.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.remember
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlin.math.cos
+import kotlin.math.sin
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -58,8 +79,34 @@ fun loc(isEn: Boolean, fr: String, en: String): String = if (isEn) en else fr
 @Composable
 fun tr(fr: String, en: String): String = if (LocalIsEnglish.current) en else fr
 
+/** Remplissage « verre » translucide : plus lumineux en haut, plus léger en bas. */
+@Composable
+fun glassFillBrush(strong: Boolean = false): Brush {
+    val dark = LocalGlassPalette.current.isDark
+    val top = if (dark) (if (strong) 0.13f else 0.085f) else (if (strong) 0.78f else 0.58f)
+    val bottom = if (dark) (if (strong) 0.07f else 0.04f) else (if (strong) 0.50f else 0.34f)
+    return Brush.verticalGradient(listOf(Color.White.copy(alpha = top), Color.White.copy(alpha = bottom)))
+}
+
+/** Liseré de verre : bord éclairé en haut à gauche, presque éteint au milieu, reflet en bas à droite. */
+@Composable
+fun glassBorderBrush(strong: Boolean = false, tint: Color? = null): Brush {
+    val dark = LocalGlassPalette.current.isDark
+    val hi = if (dark) (if (strong) 0.42f else 0.28f) else 0.95f
+    val lo = if (dark) 0.14f else 0.55f
+    val edge = tint ?: Color.White
+    return Brush.linearGradient(
+        colors = listOf(
+            edge.copy(alpha = if (tint != null) 0.85f else hi),
+            Color.White.copy(alpha = if (dark) 0.04f else 0.18f),
+            edge.copy(alpha = if (tint != null) 0.45f else lo)
+        )
+    )
+}
+
 /**
- * Editorial Japanese-Bauhaus warm paper canvas background with subtle drafting lines.
+ * Fond ambiant du verre liquide : trois halos lents (champagne, pierre, ivoire) qui dérivent derrière
+ * les surfaces translucides. Très discret pour rester sobre.
  */
 @Composable
 fun GlassBackground(
@@ -67,6 +114,20 @@ fun GlassBackground(
     content: @Composable () -> Unit
 ) {
     val palette = LocalGlassPalette.current
+    val transition = rememberInfiniteTransition(label = "ambient")
+    val t1 by transition.animateFloat(
+        0f, 1f,
+        infiniteRepeatable(tween(26000, easing = LinearEasing), RepeatMode.Restart), label = "o1"
+    )
+    val t2 by transition.animateFloat(
+        0f, 1f,
+        infiniteRepeatable(tween(34000, easing = LinearEasing), RepeatMode.Restart), label = "o2"
+    )
+    val t3 by transition.animateFloat(
+        0f, 1f,
+        infiniteRepeatable(tween(41000, easing = LinearEasing), RepeatMode.Restart), label = "o3"
+    )
+    val twoPi = (2 * Math.PI).toFloat()
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -77,40 +138,34 @@ fun GlassBackground(
             )
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val gridColor = palette.paperTaupe.copy(alpha = if (palette.isDark) 0.08f else 0.18f)
-            val step = 64.dp.toPx()
-            var x = step
-            while (x < size.width) {
-                drawLine(gridColor, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1f)
-                x += step
+            val w = size.width
+            val h = size.height
+            val warm = if (palette.isDark) Color(0xFFC9A361).copy(alpha = 0.20f) else Color(0xFFD9B25A).copy(alpha = 0.34f)
+            val stone = if (palette.isDark) Color(0xFF8E897D).copy(alpha = 0.16f) else Color(0xFFA38F70).copy(alpha = 0.22f)
+            val ivory = if (palette.isDark) Color(0xFFEBE4D5).copy(alpha = 0.07f) else Color(0xFFFFFFFF).copy(alpha = 0.70f)
+            fun orb(color: Color, cx: Float, cy: Float, r: Float) {
+                drawCircle(
+                    brush = Brush.radialGradient(listOf(color, Color.Transparent), center = Offset(cx, cy), radius = r),
+                    radius = r,
+                    center = Offset(cx, cy)
+                )
             }
-            var y = step
-            while (y < size.height) {
-                drawLine(gridColor, Offset(0f, y), Offset(size.width, y), strokeWidth = 1f)
-                y += step
-            }
-            // Subtle warm Bauhaus sun glow behind top hero area
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(palette.orbCyan, Color.Transparent),
-                    center = Offset(size.width * 0.82f, size.height * 0.14f),
-                    radius = size.width * 0.55f
-                ),
-                radius = size.width * 0.55f,
-                center = Offset(size.width * 0.82f, size.height * 0.14f)
-            )
+            orb(warm, w * (0.78f + 0.10f * sin(t1 * twoPi)), h * (0.16f + 0.05f * cos(t1 * twoPi)), w * 0.75f)
+            orb(stone, w * (0.15f + 0.12f * cos(t2 * twoPi)), h * (0.52f + 0.07f * sin(t2 * twoPi)), w * 0.85f)
+            orb(ivory, w * (0.60f + 0.14f * sin(t3 * twoPi)), h * (0.88f + 0.04f * cos(t3 * twoPi)), w * 0.80f)
         }
         content()
     }
 }
 
 /**
- * Crisp Japanese-Bauhaus editorial paper card with ink outline and subtle tactile offset shadow when elevated.
+ * Carte de verre liquide : fond translucide dégradé, liseré lumineux, reflet spéculaire en haut
+ * et ombre douce. [elevated] renforce l'opacité et la profondeur.
  */
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(18.dp),
+    shape: Shape = RoundedCornerShape(22.dp),
     elevated: Boolean = false,
     accentBorderColor: Color? = null,
     onClick: (() -> Unit)? = null,
@@ -118,41 +173,70 @@ fun GlassCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val palette = LocalGlassPalette.current
-    val fill = if (elevated) palette.glassSurfaceElevated else palette.glassSurface
-    val borderColor = when {
-        elevated -> palette.glassBorderStart
-        accentBorderColor != null -> accentBorderColor.copy(alpha = 0.72f)
-        else -> palette.paperTaupe.copy(alpha = 0.85f)
-    }
-    val borderWidth = if (elevated) 1.5.dp else 1.dp
+    val fill = glassFillBrush(strong = elevated)
+    val border = glassBorderBrush(strong = elevated, tint = accentBorderColor)
+    val shadowColor = palette.inkShadow
+    val sheen = Color.White.copy(alpha = if (palette.isDark) 0.22f else 0.9f)
 
-    val shadowMod = if (elevated) {
-        modifier.drawBehind {
-            val offsetPx = 3.dp.toPx()
-            val radiusPx = 18.dp.toPx()
-            drawRoundRect(
-                color = palette.inkShadow,
-                topLeft = Offset(offsetPx, offsetPx),
-                size = Size(size.width, size.height),
-                cornerRadius = CornerRadius(radiusPx, radiusPx)
-            )
+    val base = modifier
+        .drawBehind {
+            // ombre douce : plusieurs couches décalées, de plus en plus larges et transparentes
+            val layers = if (elevated) 5 else 3
+            for (i in 1..layers) {
+                val grow = i * 2.5.dp.toPx()
+                drawRoundRect(
+                    color = shadowColor.copy(alpha = shadowColor.alpha * (0.55f / i)),
+                    topLeft = Offset(-grow * 0.4f, grow * 0.55f),
+                    size = Size(size.width + grow * 0.8f, size.height + grow * 0.6f),
+                    cornerRadius = CornerRadius(22.dp.toPx() + grow, 22.dp.toPx() + grow)
+                )
+            }
         }
-    } else {
-        modifier
-    }
-
-    val baseModifier = shadowMod
         .clip(shape)
         .background(fill)
-        .border(BorderStroke(borderWidth, borderColor), shape)
-        .let { m ->
-            if (onClick != null) m.clickable(onClick = onClick) else m
+        .border(BorderStroke(1.dp, border), shape)
+        .drawWithContent {
+            drawContent()
+            // reflet spéculaire en haut de la carte
+            drawLine(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(Color.Transparent, sheen, Color.Transparent),
+                    startX = size.width * 0.08f,
+                    endX = size.width * 0.92f
+                ),
+                start = Offset(size.width * 0.08f, 1.dp.toPx()),
+                end = Offset(size.width * 0.92f, 1.dp.toPx()),
+                strokeWidth = 1.dp.toPx()
+            )
         }
+        .let { m -> if (onClick != null) m.pressScale().clickable(onClick = onClick) else m }
 
     Column(
-        modifier = baseModifier.padding(contentPadding),
+        modifier = base.padding(contentPadding),
         content = content
     )
+}
+
+/** Léger effet « ressort » à l'appui : la surface se comprime puis revient. */
+fun Modifier.pressScale(pressedScale: Float = 0.97f): Modifier = composed {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val k by animateFloatAsState(
+        targetValue = if (pressed) pressedScale else 1f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = 500f),
+        label = "press"
+    )
+    this
+        .graphicsLayer { scaleX = k; scaleY = k }
+        .pointerInput(Unit) {
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                val press = PressInteraction.Press(down.position)
+                interaction.tryEmit(press)
+                val up = waitForUpOrCancellation()
+                interaction.tryEmit(if (up != null) PressInteraction.Release(press) else PressInteraction.Cancel(press))
+            }
+        }
 }
 
 @Composable
@@ -178,8 +262,8 @@ fun GlassTopBar(
                     modifier = Modifier
                         .minimumInteractiveComponentSize()
                         .clip(CircleShape)
-                        .background(palette.glassSurfaceElevated)
-                        .border(1.2.dp, palette.glassBorderStart, CircleShape)
+                        .background(glassFillBrush(strong = true))
+                        .border(1.dp, glassBorderBrush(strong = true), CircleShape)
                         .testTag(backTestTag)
                 ) {
                     Icon(
@@ -220,7 +304,11 @@ fun GlassTopBar(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .height(1.dp)
-                .background(palette.paperTaupe.copy(alpha = 0.55f))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(Color.Transparent, palette.paperTaupe.copy(alpha = 0.7f), Color.Transparent)
+                    )
+                )
         )
     }
 }
@@ -235,7 +323,7 @@ fun GlassFilterChip(
 ) {
     val palette = LocalGlassPalette.current
     val bgColor by animateColorAsState(
-        targetValue = if (selected) palette.textPrimary else palette.glassSurface,
+        targetValue = if (selected) palette.textPrimary else Color.Transparent,
         label = "chip_bg"
     )
     val contentColor by animateColorAsState(
@@ -243,16 +331,21 @@ fun GlassFilterChip(
         label = "chip_fg"
     )
     val borderColor by animateColorAsState(
-        targetValue = if (selected) palette.textPrimary else palette.paperTaupe,
+        targetValue = if (selected) palette.textPrimary else Color.Transparent,
         label = "chip_border"
     )
     Surface(
         onClick = onClick,
-        modifier = modifier.minimumInteractiveComponentSize(),
+        modifier = modifier.minimumInteractiveComponentSize().pressScale(0.94f),
         shape = RoundedCornerShape(50),
-        color = bgColor,
-        border = BorderStroke(1.2.dp, borderColor)
+        color = Color.Transparent,
+        border = null
     ) {
+      Box(
+        modifier = Modifier
+            .background(if (selected) Brush.verticalGradient(listOf(bgColor, bgColor)) else glassFillBrush(), RoundedCornerShape(50))
+            .border(1.dp, if (selected) Brush.verticalGradient(listOf(borderColor, borderColor)) else glassBorderBrush(), RoundedCornerShape(50))
+      ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -273,6 +366,7 @@ fun GlassFilterChip(
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
             )
         }
+      }
     }
 }
 

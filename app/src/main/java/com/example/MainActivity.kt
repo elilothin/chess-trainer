@@ -4,6 +4,32 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.font.FontWeight
+import com.example.ui.components.glassBorderBrush
+import com.example.ui.components.glassFillBrush
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -18,9 +44,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -166,50 +189,19 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
                 if (showBottomBar) {
-                    NavigationBar(
-                        containerColor = palette.bgTop,
-                        windowInsets = WindowInsets.navigationBars,
-                        tonalElevation = 0.dp,
-                        modifier = Modifier.border(
-                            width = 1.2.dp,
-                            color = palette.glassBorderStart
-                        )
-                    ) {
-                        tabs.forEach { tab ->
-                            val selected = currentRoute == tab.route
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = {
-                                    navController.navigate(tab.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = tab.icon,
-                                        contentDescription = tr(tab.labelFr, tab.labelEn)
-                                    )
-                                },
-                                label = {
-                                    Text(
-                                        text = tr(tab.labelFr, tab.labelEn),
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
-                                },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = palette.bgTop,
-                                    selectedTextColor = palette.textPrimary,
-                                    indicatorColor = palette.textPrimary,
-                                    unselectedIconColor = palette.textSecondary,
-                                    unselectedTextColor = palette.textSecondary
-                                )
-                            )
+                    GlassTabBar(
+                        tabs = tabs,
+                        currentRoute = currentRoute,
+                        onSelect = { route ->
+                            navController.navigate(route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
-                    }
+                    )
                 }
             }
         ) { innerPadding ->
@@ -220,7 +212,27 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
             ) {
                 NavHost(
                     navController = navController,
-                    startDestination = ROUTE_HOME
+                    startDestination = ROUTE_HOME,
+                    enterTransition = {
+                        fadeIn(tween(320, easing = FastOutSlowInEasing)) +
+                            slideInHorizontally(tween(420, easing = FastOutSlowInEasing)) { it / 9 } +
+                            scaleIn(tween(420, easing = FastOutSlowInEasing), initialScale = 0.96f)
+                    },
+                    exitTransition = {
+                        fadeOut(tween(220)) +
+                            slideOutHorizontally(tween(420, easing = FastOutSlowInEasing)) { -it / 12 } +
+                            scaleOut(tween(420, easing = FastOutSlowInEasing), targetScale = 0.97f)
+                    },
+                    popEnterTransition = {
+                        fadeIn(tween(320, easing = FastOutSlowInEasing)) +
+                            slideInHorizontally(tween(420, easing = FastOutSlowInEasing)) { -it / 9 } +
+                            scaleIn(tween(420, easing = FastOutSlowInEasing), initialScale = 0.96f)
+                    },
+                    popExitTransition = {
+                        fadeOut(tween(220)) +
+                            slideOutHorizontally(tween(420, easing = FastOutSlowInEasing)) { it / 12 } +
+                            scaleOut(tween(420, easing = FastOutSlowInEasing), targetScale = 0.97f)
+                    }
                 ) {
                     composable(ROUTE_HOME) {
                         HomeScreen(
@@ -467,6 +479,98 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
                             },
                             onBack = { navController.popBackStack() }
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Barre d'onglets flottante en verre : l'onglet actif a une pastille qui se gonfle en ressort. */
+@Composable
+private fun GlassTabBar(
+    tabs: List<BottomTab>,
+    currentRoute: String,
+    onSelect: (String) -> Unit
+) {
+    val palette = LocalGlassPalette.current
+    val shape = RoundedCornerShape(30.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 18.dp, vertical = 10.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    for (i in 1..4) {
+                        val grow = i * 3.dp.toPx()
+                        drawRoundRect(
+                            color = palette.inkShadow.copy(alpha = palette.inkShadow.alpha * (0.6f / i)),
+                            topLeft = Offset(-grow * 0.3f, grow * 0.5f),
+                            size = androidx.compose.ui.geometry.Size(size.width + grow * 0.6f, size.height + grow * 0.5f),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(30.dp.toPx() + grow)
+                        )
+                    }
+                }
+                .clip(shape)
+                .background(palette.bgTop.copy(alpha = if (palette.isDark) 0.72f else 0.62f))
+                .background(glassFillBrush(strong = true))
+                .border(1.dp, glassBorderBrush(strong = true), shape)
+                .padding(6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            tabs.forEach { tab ->
+                val selected = currentRoute == tab.route
+                val weight by animateFloatAsState(
+                    targetValue = if (selected) 1.55f else 1f,
+                    animationSpec = spring(dampingRatio = 0.72f, stiffness = 380f),
+                    label = "tab_w"
+                )
+                val pill by animateColorAsState(
+                    targetValue = if (selected) palette.textPrimary else Color.Transparent,
+                    animationSpec = tween(260),
+                    label = "tab_pill"
+                )
+                val fg by animateColorAsState(
+                    targetValue = if (selected) palette.bgTop else palette.textSecondary,
+                    animationSpec = tween(260),
+                    label = "tab_fg"
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(weight)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(pill)
+                        .clickable(
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null
+                        ) { onSelect(tab.route) }
+                        .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = tr(tab.labelFr, tab.labelEn),
+                            tint = fg,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        AnimatedVisibility(visible = selected) {
+                            Text(
+                                text = tr(tab.labelFr, tab.labelEn),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = fg,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
