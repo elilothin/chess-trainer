@@ -60,6 +60,10 @@ import com.example.domain.chess.ChessEngine
 import com.example.domain.chess.PgnParser
 import com.example.domain.chess.rememberChessEngine
 import com.example.domain.model.GameOutcome
+import com.example.domain.bot.Advantage
+import com.example.domain.bot.PositionEvaluator
+import com.example.ui.components.AdvantageBadge
+import com.example.ui.components.BoardWithGauge
 import com.example.ui.feedback.LocalGameFeedback
 import com.example.ui.feedback.Sfx
 import com.example.domain.model.PieceColor
@@ -134,6 +138,13 @@ fun GameScreen(
     var analyzing by remember { mutableStateOf(false) }
 
     val rated = hintsUsed == 0 && takebacks == 0
+
+    // Jauge d'avantage : recalculée après chaque coup
+    var advantage by remember { mutableStateOf<Advantage?>(null) }
+    LaunchedEffect(engineState.fen) {
+        val fen = engineState.fen
+        advantage = withContext(Dispatchers.Default) { PositionEvaluator.evaluate(fen) }
+    }
 
     fun finish(res: String) {
         if (result != null) return
@@ -242,6 +253,8 @@ fun GameScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Retour", "Back"), tint = palette.textPrimary)
                 }
                 Spacer(Modifier.weight(1f))
+                AdvantageBadge(advantage)
+                Spacer(Modifier.width(12.dp))
                 Text(
                     text = if (rated) tr("PARTIE CLASSÉE", "RATED GAME") else tr("NON CLASSÉE", "UNRATED"),
                     fontFamily = JetBrainsMonoFontFamily,
@@ -260,15 +273,17 @@ fun GameScreen(
                 active = board.turn != userColor && result == null
             )
 
-            KChessBoard(
-                engine = engine,
-                flipped = !userWhite,
-                showCoordinates = showCoordinates,
-                interactive = userToMove,
-                hintArrow = hintArrow,
-                showStatusHeader = false,
-                onMovePlayed = { _, _ -> hintArrow = null }
-            )
+            BoardWithGauge(advantage = advantage, flipped = !userWhite) {
+                KChessBoard(
+                    engine = engine,
+                    flipped = !userWhite,
+                    showCoordinates = showCoordinates,
+                    interactive = userToMove,
+                    hintArrow = hintArrow,
+                    showStatusHeader = false,
+                    onMovePlayed = { _, _ -> hintArrow = null }
+                )
+            }
 
             PlayerStrip(
                 name = tr("Toi", "You"),

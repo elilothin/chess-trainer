@@ -35,6 +35,8 @@ class ChessTrainingRepository(
 ) {
     val settings: Flow<UserSettings> = settingsStore.settingsFlow
     val playProfile: Flow<PlayProfile> = settingsStore.playProfileFlow
+    val onlineDbUrl: Flow<String> = settingsStore.onlineDbUrlFlow
+    suspend fun setOnlineDbUrl(url: String) = settingsStore.setOnlineDbUrl(url)
 
     suspend fun applyGameResult(persona: BotPersona, botEloAtStart: Int, playerScore: Double, rated: Boolean): RatingChange =
         settingsStore.applyGameResult(persona, botEloAtStart, playerScore, rated)

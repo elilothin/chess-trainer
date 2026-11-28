@@ -29,6 +29,7 @@ class SettingsDataStore(private val context: Context) {
         val SHOW_COORDINATES = booleanPreferencesKey("show_coordinates")
         val HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
         val SOUND_ENABLED = booleanPreferencesKey("sound_enabled")
+        val ONLINE_DB_URL = stringPreferencesKey("online_db_url")
         val PLAY_PROFILE = stringPreferencesKey("play_profile")
     }
 
@@ -67,6 +68,12 @@ class SettingsDataStore(private val context: Context) {
 
     suspend fun setSoundEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.SOUND_ENABLED] = enabled }
+    }
+
+    val onlineDbUrlFlow: Flow<String> = context.dataStore.data.map { it[Keys.ONLINE_DB_URL].orEmpty() }
+
+    suspend fun setOnlineDbUrl(url: String) {
+        context.dataStore.edit { it[Keys.ONLINE_DB_URL] = url }
     }
 
     val playProfileFlow: Flow<PlayProfile> = context.dataStore.data.map { prefs ->

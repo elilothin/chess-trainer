@@ -63,6 +63,13 @@ class ChessTrainerViewModel(
     val playProfile: StateFlow<PlayProfile> = repository.playProfile
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PlayProfile())
 
+    val onlineDbUrl: StateFlow<String> = repository.onlineDbUrl
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    fun setOnlineDbUrl(url: String) {
+        viewModelScope.launch { repository.setOnlineDbUrl(url) }
+    }
+
     private val _review = MutableStateFlow<GameReviewData?>(null)
     val review: StateFlow<GameReviewData?> = _review.asStateFlow()
 

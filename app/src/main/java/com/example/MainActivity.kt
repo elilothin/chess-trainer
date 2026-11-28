@@ -89,6 +89,7 @@ import com.example.ui.screens.GameScreen
 import com.example.ui.screens.PlayHubScreen
 import com.example.ui.screens.ReviewScreen
 import com.example.ui.screens.ProgressScreen
+import com.example.ui.screens.VersusScreen
 import com.example.ui.screens.PuzzlesScreen
 import com.example.ui.screens.QuizScreen
 import com.example.ui.screens.SettingsScreen
@@ -112,6 +113,8 @@ const val ROUTE_QUIZ = "quiz"
 const val ROUTE_PLAY_AI = "play_ai"
 const val ROUTE_GAME = "game/{botId}/{color}/{minutes}"
 const val ROUTE_REVIEW = "review"
+const val ROUTE_VERSUS_LOCAL = "versus/local"
+const val ROUTE_VERSUS_ONLINE = "versus/online"
 const val ROUTE_PROGRESS = "progress"
 const val ROUTE_SETTINGS = "settings"
 
@@ -255,6 +258,25 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
                             onOpenSettings = { navController.navigate(ROUTE_SETTINGS) }
                         )
                     }
+                    composable(ROUTE_VERSUS_LOCAL) {
+                        VersusScreen(
+                            online = false,
+                            dbUrl = "",
+                            showCoordinates = settings.showCoordinates,
+                            onSaveDbUrl = {},
+                            onExit = { navController.popBackStack() }
+                        )
+                    }
+                    composable(ROUTE_VERSUS_ONLINE) {
+                        val dbUrl by viewModel.onlineDbUrl.collectAsStateWithLifecycle()
+                        VersusScreen(
+                            online = true,
+                            dbUrl = dbUrl,
+                            showCoordinates = settings.showCoordinates,
+                            onSaveDbUrl = { viewModel.setOnlineDbUrl(it) },
+                            onExit = { navController.popBackStack() }
+                        )
+                    }
                     composable(ROUTE_PLAY_TAB) {
                         PlayHubScreen(
                             profile = playProfile,
@@ -269,6 +291,7 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
                                 navController.navigate(ROUTE_ANALYSIS)
                             },
                             onDeleteGame = { viewModel.deletePlayedGame(it) },
+                            onVersus = { online -> navController.navigate(if (online) ROUTE_VERSUS_ONLINE else ROUTE_VERSUS_LOCAL) },
                             onBack = { navController.popBackStack() }
                         )
                     }
@@ -393,6 +416,7 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
                                 navController.navigate(ROUTE_ANALYSIS)
                             },
                             onDeleteGame = { viewModel.deletePlayedGame(it) },
+                            onVersus = { online -> navController.navigate(if (online) ROUTE_VERSUS_ONLINE else ROUTE_VERSUS_LOCAL) },
                             onBack = { navController.popBackStack() }
                         )
                     }

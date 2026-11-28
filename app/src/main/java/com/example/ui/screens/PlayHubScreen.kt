@@ -66,6 +66,7 @@ fun PlayHubScreen(
     onSetStartingElo: (Int) -> Unit,
     onAnalyzeGame: (String) -> Unit,
     onDeleteGame: (Long) -> Unit,
+    onVersus: (online: Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     val palette = LocalGlassPalette.current
@@ -106,6 +107,28 @@ fun PlayHubScreen(
                     elo = profile.botElo(BotRoster.sparring),
                     onClick = { selected = BotRoster.sparring }
                 )
+            }
+
+            item {
+                SectionLabel(tr("Contre un humain", "Versus a human"), Modifier.padding(top = 10.dp))
+            }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    com.example.ui.components.GlassCard(
+                        modifier = Modifier.weight(1f),
+                        onClick = { onVersus(false) }
+                    ) {
+                        Text(tr("2 joueurs", "2 players"), fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                        Text(tr("Sur le même téléphone", "Same phone"), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                    }
+                    com.example.ui.components.GlassCard(
+                        modifier = Modifier.weight(1f),
+                        onClick = { onVersus(true) }
+                    ) {
+                        Text(tr("En ligne", "Online"), fontWeight = FontWeight.Bold, color = palette.textPrimary)
+                        Text(tr("Salle avec un code", "Room with a code"), style = MaterialTheme.typography.bodySmall, color = palette.textSecondary)
+                    }
+                }
             }
 
             item {

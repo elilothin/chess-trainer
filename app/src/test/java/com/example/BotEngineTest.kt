@@ -91,3 +91,50 @@ class BotEngineTest {
         }
     }
 }
+
+class OnlineRoomTest {
+    private class Fake : com.example.domain.online.RoomTransport {
+        val store = HashMap<String, String>()
+        override suspend fun get(path: String): String? {
+            // reconstruit l'objet de la salle à partir des champs écrits séparément
+            val prefix = "$path/"
+            val whole = store[path]
+            val fields = com.example.domain.online.FlatJson.decode(whole)?.toMutableMap() ?: LinkedHashMap()
+            store.filterKeys { it.startsWith(prefix) }.forEach { (k, v) ->
+                fields[k.removePrefix(prefix)] = com.example.domain.online.FlatJson.decode("{\"x\":$v}")!!["x"]!!
+            }
+            return if (whole == null && fields.isEmpty()) "null" else com.example.domain.online.FlatJson.encode(fields)
+        }
+        override suspend fun put(path: String, json: String) { store[path] = json }
+    }
+
+    @org.junit.Test
+    fun fullRoomFlow() = kotlinx.coroutines.runBlocking {
+        val room = com.example.domain.online.OnlineRoom(Fake())
+        org.junit.Assert.assertEquals(com.example.domain.online.JoinResult.NOT_FOUND, room.join("ABCDE", "bob"))
+        room.create("ABCDE", "alice")
+        org.junit.Assert.assertEquals("waiting", room.poll("ABCDE")!!.status)
+        org.junit.Assert.assertEquals(com.example.domain.online.JoinResult.OK, room.join("ABCDE", "bob"))
+        org.junit.Assert.assertEquals(com.example.domain.online.JoinResult.FULL, room.join("ABCDE", "carol"))
+        room.pushMoves("ABCDE", listOf("e2e4", "e7e5"))
+        val snap = room.poll("ABCDE")!!
+        org.junit.Assert.assertEquals(listOf("e2e4", "e7e5"), snap.moves)
+        org.junit.Assert.assertEquals("playing", snap.status)
+        org.junit.Assert.assertEquals("bob", snap.black)
+        room.finish("ABCDE", "1-0")
+        val end = room.poll("ABCDE")!!
+        org.junit.Assert.assertEquals("over", end.status)
+        org.junit.Assert.assertEquals("1-0", end.result)
+        println("note3: online flow ok")
+    }
+
+    @org.junit.Test
+    fun helpers() {
+        org.junit.Assert.assertEquals("ABCDE", com.example.domain.online.OnlineRoom.normalizeCode(" abcde "))
+        org.junit.Assert.assertEquals(5, com.example.domain.online.OnlineRoom.newCode().length)
+        org.junit.Assert.assertEquals("https://x.firebaseio.com", com.example.domain.online.OnlineRoom.normalizeDbUrl("https://x.firebaseio.com/"))
+        org.junit.Assert.assertNull(com.example.domain.online.OnlineRoom.normalizeDbUrl("http://x"))
+        val m = com.example.domain.online.FlatJson.decode("{\"a\":\"x y\",\"b\":12,\"c\":null}")!!
+        org.junit.Assert.assertEquals("x y", m["a"]); org.junit.Assert.assertEquals("12", m["b"]); org.junit.Assert.assertEquals("", m["c"])
+    }
+}
