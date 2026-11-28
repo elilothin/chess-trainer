@@ -30,6 +30,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import com.example.ui.components.glassBorderBrush
 import com.example.ui.components.glassFillBrush
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -536,7 +541,10 @@ fun ChessTrainerApp(viewModel: ChessTrainerViewModel) {
     }
 }
 
-/** Barre d'onglets flottante en verre : l'onglet actif a une pastille qui se gonfle en ressort. */
+/**
+ * Dock de navigation flottant en verre : une pastille lumineuse glisse en ressort sous l'onglet actif,
+ * l'icône de l'onglet actif grossit légèrement et chaque changement donne un petit retour tactile.
+ */
 @Composable
 private fun GlassTabBar(
     tabs: List<BottomTab>,
@@ -544,14 +552,17 @@ private fun GlassTabBar(
     onSelect: (String) -> Unit
 ) {
     val palette = LocalGlassPalette.current
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     val shape = RoundedCornerShape(30.dp)
+    val selectedIndex = tabs.indexOfFirst { it.route == currentRoute }.coerceAtLeast(0)
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(horizontal = 18.dp, vertical = 10.dp)
     ) {
-        Row(
+        androidx.compose.foundation.layout.BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
                 .drawBehind {
@@ -569,58 +580,70 @@ private fun GlassTabBar(
                 .background(palette.bgTop.copy(alpha = if (palette.isDark) 0.72f else 0.62f))
                 .background(glassFillBrush(strong = true))
                 .border(1.dp, glassBorderBrush(strong = true), shape)
-                .padding(6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(6.dp)
         ) {
-            tabs.forEach { tab ->
-                val selected = currentRoute == tab.route
-                val weight by animateFloatAsState(
-                    targetValue = if (selected) 1.55f else 1f,
-                    animationSpec = spring(dampingRatio = 0.72f, stiffness = 380f),
-                    label = "tab_w"
-                )
-                val pill by animateColorAsState(
-                    targetValue = if (selected) palette.textPrimary else Color.Transparent,
-                    animationSpec = tween(260),
-                    label = "tab_pill"
-                )
-                val fg by animateColorAsState(
-                    targetValue = if (selected) palette.bgTop else palette.textSecondary,
-                    animationSpec = tween(260),
-                    label = "tab_fg"
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(weight)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(pill)
-                        .clickable(
-                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                            indication = null
-                        ) { onSelect(tab.route) }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+            val tabWidth = maxWidth / tabs.size
+            val indicatorX by androidx.compose.animation.core.animateDpAsState(
+                targetValue = tabWidth * selectedIndex,
+                animationSpec = spring(dampingRatio = 0.68f, stiffness = 360f),
+                label = "dock_indicator"
+            )
+            // pastille de verre sous l'onglet actif
+            Box(
+                modifier = Modifier
+                    .offset(x = indicatorX)
+                    .width(tabWidth)
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(palette.accentCyan.copy(alpha = if (palette.isDark) 0.14f else 0.20f))
+                    .background(glassFillBrush(strong = true))
+                    .border(1.dp, glassBorderBrush(strong = true, tint = palette.accentCyan), RoundedCornerShape(24.dp))
+            )
+            Row(modifier = Modifier.fillMaxWidth()) {
+                tabs.forEachIndexed { index, tab ->
+                    val selected = index == selectedIndex
+                    val scaleK by animateFloatAsState(
+                        targetValue = if (selected) 1.15f else 1f,
+                        animationSpec = spring(dampingRatio = 0.5f, stiffness = 420f),
+                        label = "tab_scale"
+                    )
+                    val fg by animateColorAsState(
+                        targetValue = if (selected) palette.textPrimary else palette.textSecondary,
+                        animationSpec = tween(220),
+                        label = "tab_fg"
+                    )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .clickable(
+                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                if (!selected) {
+                                    haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    onSelect(tab.route)
+                                }
+                            },
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Icon(
                             imageVector = tab.icon,
                             contentDescription = tr(tab.labelFr, tab.labelEn),
                             tint = fg,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier
+                                .size(22.dp)
+                                .graphicsLayer { scaleX = scaleK; scaleY = scaleK }
                         )
-                        AnimatedVisibility(visible = selected) {
-                            Text(
-                                text = tr(tab.labelFr, tab.labelEn),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = fg,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1
-                            )
-                        }
+                        Text(
+                            text = tr(tab.labelFr, tab.labelEn),
+                            fontSize = 10.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                            color = fg,
+                            maxLines = 1
+                        )
                     }
                 }
             }

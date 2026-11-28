@@ -478,3 +478,20 @@ fun EditorialKeywordPill(
         )
     }
 }
+
+/** Repères d'angle façon écran de visée (HUD) pour les cartes importantes. */
+fun Modifier.hudCorners(color: Color, length: Dp = 14.dp, inset: Dp = 6.dp): Modifier = this.drawWithContent {
+    drawContent()
+    val l = length.toPx()
+    val i = inset.toPx()
+    val w = 1.6.dp.toPx()
+    val c = color.copy(alpha = 0.85f)
+    fun corner(x: Float, y: Float, dx: Float, dy: Float) {
+        drawLine(c, Offset(x, y), Offset(x + dx * l, y), strokeWidth = w, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        drawLine(c, Offset(x, y), Offset(x, y + dy * l), strokeWidth = w, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+    }
+    corner(i, i, 1f, 1f)
+    corner(size.width - i, i, -1f, 1f)
+    corner(i, size.height - i, 1f, -1f)
+    corner(size.width - i, size.height - i, -1f, -1f)
+}

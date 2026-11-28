@@ -62,6 +62,10 @@ import com.example.domain.bot.PlayProfile
 import com.example.domain.model.DailyQuestProgress
 import com.example.ui.components.BotMonogram
 import com.example.ui.components.InkButton
+import com.example.ui.components.LineButton
+import com.example.ui.components.hudCorners
+import com.example.ui.components.LionCharacter
+import com.example.domain.model.LionMood
 import com.example.ui.components.SectionLabel
 import com.example.domain.model.UserGamificationStats
 import com.example.ui.components.BauhausGaugeBar
@@ -231,71 +235,64 @@ fun HomeScreen(
         item(span = { GridItemSpan(maxLineSpan) }) {
             val next = BotRoster.ladder.lastOrNull { playProfile.isUnlocked(it) && playProfile.botElo(it) <= playProfile.playerElo + 150 }
                 ?: BotRoster.ladder.first()
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(palette.textPrimary)
-                    .padding(20.dp)
+            GlassCard(
+                elevated = true,
+                accentBorderColor = palette.accentCyan,
+                modifier = Modifier.fillMaxWidth().hudCorners(palette.accentCyan),
+                contentPadding = 20.dp
             ) {
-                Text(
-                    text = tr("TON ELO", "YOUR RATING"),
-                    fontFamily = JetBrainsMonoFontFamily,
-                    fontSize = 11.sp,
-                    letterSpacing = 1.6.sp,
-                    color = palette.bgTop.copy(alpha = 0.65f)
-                )
-                Text(
-                    text = playProfile.playerElo.toString(),
-                    fontFamily = JetBrainsMonoFontFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 60.sp,
-                    color = palette.bgTop
-                )
-                Spacer(modifier = Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    BotMonogram(next, size = 38.dp, inverted = true)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = tr("▸ TON ELO", "▸ YOUR RATING"),
+                            fontFamily = JetBrainsMonoFontFamily,
+                            fontSize = 11.sp,
+                            letterSpacing = 1.8.sp,
+                            color = palette.accentCyan
+                        )
+                        Text(
+                            text = playProfile.playerElo.toString(),
+                            fontFamily = JetBrainsMonoFontFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 58.sp,
+                            color = palette.textPrimary
+                        )
+                    }
+                    LionCharacter(
+                        mood = LionMood.IDLE_HAPPY,
+                        isDark = palette.isDark,
+                        modifier = Modifier.size(104.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    BotMonogram(next, size = 38.dp, inverted = false)
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = tr("Prochain adversaire", "Next opponent"),
                             fontSize = 11.sp,
-                            color = palette.bgTop.copy(alpha = 0.65f)
+                            color = palette.textSecondary
                         )
                         Text(
                             text = "${tr(next.nameFr, next.nameEn)} · ${playProfile.botElo(next)}",
                             fontWeight = FontWeight.Bold,
-                            color = palette.bgTop
+                            color = palette.textPrimary
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
+                    InkButton(
+                        text = tr("Jouer", "Play"),
                         onClick = { onNavigate("game/${next.id}/2/0") },
-                        colors = ButtonDefaults.buttonColors(containerColor = palette.bgTop, contentColor = palette.textPrimary),
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp)
-                            .testTag("quick_play_ai_btn")
-                    ) {
-                        Text(tr("Jouer", "Play"), fontWeight = FontWeight.Bold)
-                    }
-                    Button(
+                        modifier = Modifier.weight(1f).testTag("quick_play_ai_btn")
+                    )
+                    LineButton(
+                        text = tr("Puzzles", "Puzzles"),
                         onClick = { onNavigate("puzzles") },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = palette.bgTop.copy(alpha = 0.14f),
-                            contentColor = palette.bgTop
-                        ),
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp)
-                            .testTag("quick_puzzles_btn")
-                    ) {
-                        Text(tr("Puzzles", "Puzzles"), fontWeight = FontWeight.Bold)
-                    }
+                        modifier = Modifier.weight(1f).testTag("quick_puzzles_btn")
+                    )
                 }
             }
         }

@@ -74,7 +74,8 @@ import kotlin.math.sin
  * Léon le Lion — Chunky, endearing Bauhaus-ink vector mascot drawn cleanly on Compose Canvas.
  */
 @Composable
-fun LionCharacter(
+@Suppress("unused")
+private fun LegacyLionCharacter(
     mood: LionMood = LionMood.IDLE_HAPPY,
     rank: LionRank = LionRank.STRATEGIST,
     modifier: Modifier = Modifier,
